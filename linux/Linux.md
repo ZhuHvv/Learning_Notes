@@ -1,7 +1,6 @@
 # Linux基础命令
 
 
-
 ## Linux的目录结构
 
 ![image-20221027214128453](https://image-set.oss-cn-zhangjiakou.aliyuncs.com/img-out/2022/10/27/20221027214128.png)
@@ -351,9 +350,136 @@ FinalShell登陆终端后，默认的工作目录就是用户的HOME目录
 
 ![image-20221027220009949](https://image-set.oss-cn-zhangjiakou.aliyuncs.com/img-out/2022/10/27/20221027220010.png)
 
+# Linux管理
+Windows、Linux、MacOS都采用多用户的管理模式进行权限管理
+
+## 用户、用户组
+
+Linux中允许`配置多个用户`、`配置多个用户组`、`将单个用户加入多个用户组`
+
+2个权限管控级别：`针对用户的权限控制`、`对于用户组的权限控制`
+> 比如，针对某文件，既可设定用户权限，也可设定用户组权限
+
+### 用户组管理
+以下命令需要root用户执行
+
+1. 创建用户组
+`groupadd 用户组名` 
+
+2. 删除用户组
+`groupdel 用户组名`
+
+### 用户管理
+以下命令需要root用户执行
+
+1. 创建用户
+`useradd [-g -d] 用户名`
+
+- 选项 -g 指定用户的组，若不指定，则创建同名组并自动加入；指定则需要组已存在；若已存在同名组，则必须指定
+- 选项 -d 指定用户`HOME`路径，若不指定，则默认在`/home/用户名`
+  
+2. 删除用户
+`userdel [-r] 用户名`
+
+- 选项 -r 删除用户的`HOME`目录
+
+3. 查看用户所属组
+`id [用户名]`
+
+- 参数 用户名 若不指定则查看自身
+
+4. 修改用户所属组
+`usermod -aG 用户组 用户名`
+
+5. 查看所有用户
+`getent passwd`
+
+- 结果每条包括7项信息，用户名、密码、用户ID等
+
+## root用户
+Linux中拥有最大权限的账户为 `root（超级管理员）`
+
+普通用户的权限一般在其`HOME`目录内不受限
+一旦出了`HOME`目录，大多数目录下，普通用户仅有`只读`、`执行`而无`修改`权限
+
+## su命令
+
+切换用户
+
+语法：`su [-] [用户]`
+
+- 选项`-`：表示在切换用户后加载环境变量。(建议带上)
+- 参数`用户`：表示要切换的用户，省略表示切换到`root`
+- 切换用户后，可通过`exit`命令退回上一用户，也可使用快捷键`ctrl + d` 
+- 从普通用户切换到其他用户需要输入对应的用户密码；从`root`切换到其他用户无需密码
 
 
 
+## sudo命令
+
+为普通的命令授权，临时以root身份执行
+
+语法：  `sudo [options] 命令`
+
+- 常用选项：
+> -V：显示版本信息。
+> -h：显示帮助信息。
+> -l：列出当前用户的权限。
+> -v：重新验证用户，要求输入密码。
+> -k：使当前的 sudo 会话失效，下次执行 sudo 时需要重新输入密码。
+> -u：username：以指定用户的身份执行命令，而不是 root。
+> -i：以 root 身份启动 login shell
+
+- 需要为普通用户`配置sudo认证`，该用户才有权力使用sudo
+
+比如：
+
+```shell
+itheima ALL=(ALL)       NOPASSWD: ALL
+```
+
+在visudo内配置如上内容，可以让itheima用户，无需密码直接使用`sudo`
+
+
+## chmod命令
+
+修改文件、文件夹权限
+
+
+
+语法：`chmod [-R] 权限 参数`
+
+- 权限，要设置的权限，比如755，表示：`rwxr-xr-x`
+
+  ![image-20221027222157276](https://image-set.oss-cn-zhangjiakou.aliyuncs.com/img-out/2022/10/27/20221027222157.png)
+
+- 参数，被修改的文件、文件夹
+
+- 选项-R，设置文件夹和其内部全部内容一样生效
+
+
+
+## chown命令
+
+修改文件、文件夹所属用户、组
+
+
+
+语法：`chown [-R] [用户][:][用户组] 文件或文件夹`
+
+![image-20221027222326192](https://image-set.oss-cn-zhangjiakou.aliyuncs.com/img-out/2022/10/27/20221027222326.png)
+
+
+
+## genenv命令
+
+- `getenv group`，查看系统全部的用户组
+
+  ![image-20221027222446514](https://image-set.oss-cn-zhangjiakou.aliyuncs.com/img-out/2022/10/27/20221027222446.png)
+
+- `getenv passwd`，查看系统全部的用户
+
+  ![image-20221027222512274](https://image-set.oss-cn-zhangjiakou.aliyuncs.com/img-out/2022/10/27/20221027222512.png)
 
 # Linux常用操作
 
@@ -695,118 +821,8 @@ FinalShell登陆终端后，默认的工作目录就是用户的HOME目录
 
 
 
-
-## su命令
-
-切换用户
-
-语法：`su [-] [用户]`
-
-![image-20221027222021619](https://image-set.oss-cn-zhangjiakou.aliyuncs.com/img-out/2022/10/27/20221027222021.png)
-
-
-
-## sudo命令
-
-![image-20221027222035337](https://image-set.oss-cn-zhangjiakou.aliyuncs.com/img-out/2022/10/27/20221027222035.png)
-
-
-
-比如：
-
-```shell
-itheima ALL=(ALL)       NOPASSWD: ALL
-```
-
-在visudo内配置如上内容，可以让itheima用户，无需密码直接使用`sudo`
-
-
-
-## chmod命令
-
-修改文件、文件夹权限
-
-
-
-语法：`chmod [-R] 权限 参数`
-
-- 权限，要设置的权限，比如755，表示：`rwxr-xr-x`
-
-  ![image-20221027222157276](https://image-set.oss-cn-zhangjiakou.aliyuncs.com/img-out/2022/10/27/20221027222157.png)
-
-- 参数，被修改的文件、文件夹
-
-- 选项-R，设置文件夹和其内部全部内容一样生效
-
-
-
-## chown命令
-
-修改文件、文件夹所属用户、组
-
-
-
-语法：`chown [-R] [用户][:][用户组] 文件或文件夹`
-
-![image-20221027222326192](https://image-set.oss-cn-zhangjiakou.aliyuncs.com/img-out/2022/10/27/20221027222326.png)
-
-
-
-## 用户组管理
-
-![image-20221027222354498](https://image-set.oss-cn-zhangjiakou.aliyuncs.com/img-out/2022/10/27/20221027222354.png)
-
-
-
-## 用户管理
-
-![image-20221027222407618](https://image-set.oss-cn-zhangjiakou.aliyuncs.com/img-out/2022/10/27/20221027222407.png)
-
-
-
-## genenv命令
-
-- `getenv group`，查看系统全部的用户组
-
-  ![image-20221027222446514](https://image-set.oss-cn-zhangjiakou.aliyuncs.com/img-out/2022/10/27/20221027222446.png)
-
-- `getenv passwd`，查看系统全部的用户
-
-  ![image-20221027222512274](https://image-set.oss-cn-zhangjiakou.aliyuncs.com/img-out/2022/10/27/20221027222512.png)
-
-
-
 ## env命令
 
 查看系统全部的环境变量
 
 语法：`env`
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
