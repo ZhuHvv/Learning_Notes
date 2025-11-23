@@ -237,6 +237,81 @@ Redis是key-value型数据库，key一般是`String`类型，value类型则不�
 >   （个人觉得这个说法不是很严谨，比如String类型的int编码，并没有使用底层的那几种数据结构，而是直接利用存放ptr指针的空间存储整数）
 > - ptr：指向底层数据结构的指针
 
+### SDS
+
+![](https://cdn.xiaolincoding.com//mysql/other/516738c4058cdf9109e40a7812ef4239.png "5.0版本SDS数据结构")
+
+> **len** 记录字符长度
+> **alloc** 分配给字符数组的空间长度(该字符串的最大容量)
+> **flags** 表示SDS类型
+> **buf[]** 字节数组，保存实际数据
+
+#### 二进制安全
+- 由`len`记录数据长度，不需要`\0`来标记字符串结尾
+- buf[]作为字节数组，可存储任何二进制数据
+- SDS所有API都以处理二进制的的方式处理数据
+
+#### 不会发生缓冲区溢出
+- 通过`alloc-len`计算剩余可用的空间大小
+- 当缓冲区剩余空间不足时，Redis会自动扩大SDS空间大小
+> - addlen--字符串需要增加的长度；addlen+len=newlen--扩容后的字符串长度；
+> - 当 `newlen > alloc - len`
+> 1. `newlen < 1 MB` -- 则SDS扩容至 `2*newlen`
+> 2. `newlen >= 1 MB` -- 则SDS扩容至 `newlen + 1 MB`
+> - 否则，直接使用剩余空间
+
+#### 节省内存空间
+- SDS五种类型：sdshdr5、sdshdr8、sdshdr16、sdshdr32、sdshdr64
+- 不同类型的`len`、`alloc`数据类型不同，可以灵活存储不同大小的字符串
+- Redis使用专门的编译优化来节省内存空间,
+  告诉编译器取消结构体在编译过程中的优化对齐，按照**实际占用字节数**进行对齐
+> - 在 `struct声明` 加上 **__attribute__ ((packed))**
+> > 例如 struct __attribute__((packed)) test2{
+> > $~~~~~~~~~~$ char a;
+> > $~~~~~~~~~~$ int b;
+> >}test2;
+> > 默认情况下分配空间时，会进行字节对齐
+> > ![](https://cdn.xiaolincoding.com//mysql/other/35820959e8cf4376391c427ed7f81495.png)
+> > 而编译优化后，则不会浪费中间3个字节
+> > ![](https://cdn.xiaolincoding.com//mysql/other/47e6c8fbc17fd6c89bdfcb5eedaaacff.png)
+
+### 链表
+
+#### 链表节点结构 listNode
+![](https://cdn.xiaolincoding.com//mysql/other/4fecbf7f63c73ec284a4821e0bfe2843.png "Redis链表节点数据结构")
+void* value存储节点的值
+
+<br />
+
+#### 链表结构 list
+$~~~~~~$包括表头指针head、表尾节点tail、表节点数量len 以及可自定义实现的若干函数
+![](https://cdn.xiaolincoding.com//mysql/other/cadf797496816eb343a19c2451437f1e.png "Redis链表数据结构")
+
+#### 优势
+1. 由于`prev`、`next`指针，获取某节点的前置节点、后继节点时间复杂度O(1)
+2. 由于`head`、`tail`指针，获取链表的表头节点、表尾节点时间复杂度O(1)
+3. 由于`len`，获取链表节点数量时间复杂度O(1)
+4. 因为`value`的类型是`void*`，所以链表节点可以保存不同类型的值
+
+#### 缺陷
+1. 节点间内存不连续，因此**无法很好利用CPU缓存**
+2. 保存一个链表节点的值都需要一个链表节点结构头的分配，内存开销较大
+
+- 由于缺陷，Redis3.0的list对象在数据量较少的情况下，会使用**压缩列表**
+- 但压缩列表存在性能问题，因此在3.2版本引入**quicklist**
+- 在5.0版本引入了**listpack**
+  
+### 压缩列表
+内存紧凑型、占用一块**连续的**内存空间-->可以利用CPU缓存、对针对不同长度的数据进行相应编码
+
+![](https://cdn.xiaolincoding.com//mysql/other/a3b1f6235cf0587115b21312fe60289c.png "Redis压缩列表及其节点数据结构")
+> - 由**连续内存块**组成的**顺序型**数据结构
+> - **zlbytes** -- 整个表占用的内存字节数
+> - **zltail** -- 尾节点（entryN）距离起始地址的**偏移字节量**
+> - **zllen** -- 表中节点数量
+> - **zlend** -- 标记表的结束点，固定值 `0xFF(255)`
+
+
 ## Redis通用命令
 **官方说明文档：https://redis.ac.cn/docs/latest/commands/**
 
