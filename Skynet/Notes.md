@@ -36,7 +36,7 @@ actor框架+基础组件(网络、接入网络方案、lua虚拟机实现抽象�
 **从业务角度划分actor进程**
 
 ## 三.actor调度
-![Alt text](image.png)
+![](notes_images/image_1.png)
 ### 分析线程池
 - 线程池只作用在全局消息队列
 - 全局消息队列组织 **活跃的（有消息的）** actor消息队列
@@ -56,7 +56,7 @@ actor框架+基础组件(网络、接入网络方案、lua虚拟机实现抽象�
 ``  如果该 actor 队列中还有剩余消息，就把它再次加入 global_queue，等待下一轮调度。``
 
 # reactor网络模型 
-**异步  事件**
+**异步 、 事件**
 ## 组成
 IO多路复用+非阻塞IO
 **从封装层面**
@@ -75,11 +75,11 @@ IO多路复用+非阻塞IO
 ## 二.事件与actor进行绑定
 ## 三.协程将异步转化为同步
 1. 事件循环处理
-![alt text](image-4.png)
-![alt text](image-2.png)
-2. 将事件转化为消息类型
-![alt text](image-3.png)
-![alt text](image-5.png)
+![](notes_images/image_2.png)
+![](notes_images/image_3.png)
+1. 将事件转化为消息类型
+![](notes_images/image_4.png)
+![](notes_images/image_5.png)
 ``网络异常 warning处理``
 ``1.IO多路复用检测到异常，epollerr消息通报错误``
 ``2.IO操作检测到异常，如read()结果=-1，用errno错误码通报错误``
