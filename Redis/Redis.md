@@ -27,6 +27,51 @@
 3. 低延迟、速度快 (基于内存、IO多路复用、良好的编码)
 4. 支持数据持久化
 5. 支持主从集群、分片集群
+
+## Redis通用命令
+**官方说明文档：https://redis.ac.cn/docs/latest/commands/**
+
+ 常见：
+1. KEYS 查看符合模板的所有key，
+由于支持模糊匹配，所以当数据量到达一定规模，效率会很低，因此不建议在生产环境设备上使用
+- 语法 `KEYS pattern`
+
+- patterns支持模糊匹配
+> `?`表示任意单字符；`*`表示若干个任意字符；`^`表示非；`[]`表示框中的某个字符；`a-k`表示从a到k中任意的某个字符
+> `h？llo` 与 hello、hallo 和 hxllo 匹配
+`h*llo` 匹配 hllo 和 heeeello
+`h[ae]llo` 匹配 hello 和 hallo 但不匹配 hillo
+`h[^e]llo` 匹配 hallo、hbllo...但不是hello
+`h[a-b]Llo` 匹配 hallo  和 hbllo
+如果想逐字匹配特殊字符，可以用 `\` 。
+
+2. DEL 删除指定的一个key
+- 语法 `DEL key [key ...]`
+可接受多个key
+
+-  返回值：整数，被删除的**实际**键数量
+
+3. EXISTS 判断key是否存在
+- 语法 `EXISTS key [key ...]`
+可接受多个key
+
+- 返回值：整型。参数中指定的`存在的`键的数量
+
+4. EXPIRE 为 key 设置超时时间。超时时间到期后，该 key 将被自动删除
+具有关联超时的 key 通常被称为 易失的 (volatile)
+- 语法 `EXPIRE key seconds [NX | XX | GT | LT]`
+> NX -- 仅当 key 不存在超时时间时才设置超时
+XX -- 仅当 key 存在超时时间时才设置超时
+GT -- 仅当新的超时时间大于当前超时时间时才设置
+LT -- 仅当新的超时时间小于当前超时时间时才设置
+
+5. TTL 返回具有超时的键的剩余生存时间
+- 语法 `TTL key`
+
+- 返回值
+> 整数回复：TTL（以秒为单位）。
+整数回复：如果键存在但没有关联的过期时间，则返回 -1。
+整数回复：如果键不存在，则返回 -2。
  
 ## Redis数据类型
 Redis是key-value型数据库，key一般是`String`类型，value类型则不固定
@@ -350,48 +395,69 @@ $~~~~~~$包括表头指针head、表尾节点tail、表节点数量len 以及可
 #### 缺陷
 由于「连锁更新」的存在，所以压缩列表只会用于**保存的节点数量不多**的场景
 
-## Redis通用命令
-**官方说明文档：https://redis.ac.cn/docs/latest/commands/**
+### 哈希表
 
- 常见：
-1. KEYS 查看符合模板的所有key，
-由于支持模糊匹配，所以当数据量到达一定规模，效率会很低，因此不建议在生产环境设备上使用
-- 语法 `KEYS pattern`
+#### 数据结构
+dictht--哈希表结构
+dictEntry--哈希表节点结构
+![](https://cdn.xiaolincoding.com//mysql/other/dc495ffeaa3c3d8cb2e12129b3423118.png "Redis哈希表数据结构")
+> `dictEntry **table`：哈希表数组，其中每个元素是指向哈希表节点的指针
+> dictEntry中`next`指针指向下一个节点，以此实现**链式哈希**解决哈希冲突
+> dictEntry中`联合体 v`存储实际数据，可以是**指向实际值的指针**，或是 **可以直接赋值的int、double**
 
-- patterns支持模糊匹配
-> `?`表示任意单字符；`*`表示若干个任意字符；`^`表示非；`[]`表示框中的某个字符；`a-k`表示从a到k中任意的某个字符
-> `h？llo` 与 hello、hallo 和 hxllo 匹配
-`h*llo` 匹配 hllo 和 heeeello
-`h[ae]llo` 匹配 hello 和 hallo 但不匹配 hillo
-`h[^e]llo` 匹配 hallo、hbllo...但不是hello
-`h[a-b]Llo` 匹配 hallo  和 hbllo
-如果想逐字匹配特殊字符，可以用 `\` 。
+#### rehash
+Redis在实际使用哈希表时，定义了一个`dict`结构体，内部属性为两个哈希表
+![](https://cdn.xiaolincoding.com//mysql/other/2fedbc9cd4cb7236c302d695686dd478.png "Redis哈希表实际使用结构")
 
-2. DEL 删除指定的一个key
-- 语法 `DEL key [key ...]`
-可接受多个key
+</br>
 
--  返回值：整数，被删除的**实际**键数量
+- rehash过程
+![](https://cdn.xiaolincoding.com//mysql/other/cabce0ce7e320bc9d9b5bde947b6811b.png "rehash过程")
 
-3. EXISTS 判断key是否存在
-- 语法 `EXISTS key [key ...]`
-可接受多个key
+1. 触发条件
+> - **负载因子**(load factor) = 哈希表已保存节点数量 / 哈希表大小
+> - 哈希表大小是指所有不同键的数量，但是由于哈希冲突的存在，所以节点数量 >= 哈希表大小
+> - 当`负载因子>=1`,且没有执行`bgsave(RDB快照)`、`bgrewiteaof(AOF重写)`命令，进行 rehash
+> - 当`负载因子>=5`,无论如何都 rehash
 
-- 返回值：整型。参数中指定的`存在的`键的数量
+2. 渐进式rehash
+- 为了避免 rehash 在数据迁移过程中，因拷贝数据的耗时，影响 Redis 性能
+- 把一次性大量数据迁移工作的开销，分摊到了多次处理请求的过程中
+- 具体过程
+> - 正常服务请求阶段，插入的数据写入 `哈希表1`，`哈希表2`未分配空间
+> - 当数据量增加，触发rehash后，为`哈希表2`分配空间（一般是表1的两倍）
+> - 在rehash期间，每次对哈希表元素CRUD时，除执行相应操作（在两张表中都进行）之外，顺序地将 表1 中的key-value**迁移（表1中无，表2中有）**到 表2
+> - 对于C R U D，C会直接放入表2；R会先查表1，若无，则查表2；
+> - 最终 表1 会变成空表
 
-4. EXPIRE 为 key 设置超时时间。超时时间到期后，该 key 将被自动删除
-具有关联超时的 key 通常被称为 易失的 (volatile)
-- 语法 `EXPIRE key seconds [NX | XX | GT | LT]`
-> NX -- 仅当 key 不存在超时时间时才设置超时
-XX -- 仅当 key 存在超时时间时才设置超时
-GT -- 仅当新的超时时间大于当前超时时间时才设置
-LT -- 仅当新的超时时间小于当前超时时间时才设置
+### 整数集合
 
-5. TTL 返回具有超时的键的剩余生存时间
-- 语法 `TTL key`
+#### 数据结构
+```
+typedef struct intset {
+    //编码方式
+    uint32_t encoding;
+    //集合包含的元素数量
+    uint32_t length;
+    //保存元素的数组
+    int8_t contents[];
+} intset;
+```
+> - 若 encoding = INTSET_ENC_INT16，则 contents 中每一个元素类型为 int16_t；
+> - 若 encoding = INTSET_ENC_INT32，则 contents 中每一个元素类型为 int32_t；
+> - 若 encoding = INTSET_ENC_INT64，则 contents 中每一个元素类型为 int32_t；
 
-- 返回值
-> 整数回复：TTL（以秒为单位）。
-整数回复：如果键存在但没有关联的过期时间，则返回 -1。
-整数回复：如果键不存在，则返回 -2。
+</br>
 
+#### 升级（但没有降级）
+当向整数集合加入新元素时，若新元素类型比已有元素类型都长时，需要按新元素类型扩展`contents`空间大小
+
+- 实例
+原本有三个`int_16`元素，现在要加一个`int_32`元素
+1. 先扩容
+![](https://cdn.xiaolincoding.com//mysql/other/e2e3e19fc934e70563fbdfde2af39a2b.png)
+
+</br>
+
+2. 再转换原本元素的类型（从后向前），并保持原本顺序
+![](https://cdn.xiaolincoding.com//mysql/other/e84b052381e240eeb8cc97d6b729968b.png)
