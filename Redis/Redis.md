@@ -21,12 +21,16 @@
 | 数据存储位置 |                           磁盘                           |                  内存                  |
 |    扩展性    |                           垂直                           |                  水平                  |
 
+</br>
+
 ## Redis特征
 1. 键值型，值支持多种不同数据结构
 2. 单线程处理命令，每个命令具备原子性
 3. 低延迟、速度快 (基于内存、IO多路复用、良好的编码)
 4. 支持数据持久化
 5. 支持主从集群、分片集群
+
+</br>
 
 ## Redis通用命令
 **官方说明文档：https://redis.ac.cn/docs/latest/commands/**
@@ -73,6 +77,8 @@ LT -- 仅当新的超时时间小于当前超时时间时才设置
 整数回复：如果键存在但没有关联的过期时间，则返回 -1。
 整数回复：如果键不存在，则返回 -2。
  
+</br>
+
 ## Redis数据类型
 Redis是key-value型数据库，key一般是`String`类型，value类型则不固定
 
@@ -91,6 +97,8 @@ Redis是key-value型数据库，key一般是`String`类型，value类型则不�
 |    GEO    |     {A:(123,456)}     |
 |  BitMap   |     0101011010010     |
 | HyperLog  |     0101011010010     |
+
+</br>
 
 ### String类型
 根据格式不同分为三类
@@ -144,6 +152,8 @@ Redis是key-value型数据库，key一般是`String`类型，value类型则不�
 分配**两次**内存，字符串对象和SDS**分开存**
 ![](https://cdn.xiaolincoding.com/gh/xiaolincoder/redis/%E6%95%B0%E6%8D%AE%E7%B1%BB%E5%9E%8B/raw.png)
 
+</br>
+
 ### Hash类型
 无序字典，存储键（field）值(value)对
 
@@ -169,6 +179,8 @@ Redis是key-value型数据库，key一般是`String`类型，value类型则不�
 
 ##### 7.0版本之后
 **listpack**
+
+</br>
 
 ### List类型
 简单的字符串列表，按插入顺序排序，最大长度 `2^32^-1`
@@ -196,6 +208,8 @@ Redis是key-value型数据库，key一般是`String`类型，value类型则不�
 ##### 3.2版本之后
 **快表(quicklist)**
 
+</br>
+
 ### Set类型
 无序并唯一的键值集合；
 最多存储`2^32^-1`个元素
@@ -217,6 +231,8 @@ Redis是key-value型数据库，key一般是`String`类型，value类型则不�
 
 2. 哈希表
 否则
+
+</br>
 
 ### ZSet
 每个元素都带有一个`score`排序属性，基于该属性对元素排序
@@ -245,18 +261,24 @@ Redis是key-value型数据库，key一般是`String`类型，value类型则不�
 ##### 7.0版本之后
 **listpack**
 
+</br>
+
 ### BitMap
 
+</br>
 
 ### HyperLog
 
+</br>
 
 ### GEO
 
+</br>
 
 ### Stream
 
 
+</br>
 
 ## Redis数据结构
 ![](https://cdn.xiaolincoding.com//mysql/other/a9c3e7dc4ac79363d8eb8eb2290a58e6.png)
@@ -281,6 +303,8 @@ Redis是key-value型数据库，key一般是`String`类型，value类型则不�
 > - encoding：标识对象使用何种**底层数据结构**
 >   （个人觉得这个说法不是很严谨，比如String类型的int编码，并没有使用底层的那几种数据结构，而是直接利用存放ptr指针的空间存储整数）
 > - ptr：指向底层数据结构的指针
+
+</br>
 
 ### SDS
 
@@ -320,6 +344,8 @@ Redis是key-value型数据库，key一般是`String`类型，value类型则不�
 > > 而编译优化后，则不会浪费中间3个字节
 > > ![](https://cdn.xiaolincoding.com//mysql/other/47e6c8fbc17fd6c89bdfcb5eedaaacff.png)
 
+</br>
+
 ### 链表
 
 #### 链表节点结构 listNode
@@ -346,6 +372,8 @@ $~~~~~~$包括表头指针head、表尾节点tail、表节点数量len 以及可
 - 但压缩列表存在性能问题，因此在3.2版本引入**quicklist**
 - 在5.0版本引入了**listpack**
   
+</br>
+
 ### 压缩列表
 内存紧凑型、占用一块**连续的**内存空间 --> 可以利用CPU缓存、对针对不同长度的数据进行相应编码
 
@@ -452,7 +480,7 @@ typedef struct intset {
 #### 升级（但没有降级）
 当向整数集合加入新元素时，若新元素类型比已有元素类型都长时，需要按新元素类型扩展`contents`空间大小
 
-- 实例
+- 示例
 原本有三个`int_16`元素，现在要加一个`int_32`元素
 1. 先扩容
 ![](https://cdn.xiaolincoding.com//mysql/other/e2e3e19fc934e70563fbdfde2af39a2b.png)
@@ -461,3 +489,149 @@ typedef struct intset {
 
 2. 再转换原本元素的类型（从后向前），并保持原本顺序
 ![](https://cdn.xiaolincoding.com//mysql/other/e84b052381e240eeb8cc97d6b729968b.png)
+
+### 跳表
+多层次有序链表，避免普通链表逐一查找的低效
+
+#### 数据结构
+
+- 跳表节点
+```
+typedef struct zskiplistNode {
+    //Zset 对象的元素值
+    sds ele;
+    //元素权重值
+    double score;
+    //后向指针，指向前一个节点
+    struct zskiplistNode *backward;
+
+    //节点的level数组，保存每层上的前向指针和跨度,以此实现分层
+    struct zskiplistLevel {
+        //同层次的下一个节点
+        struct zskiplistNode *forward;
+        //跨度，记录两个节点间的距离
+        unsigned long span;
+    } level[];
+} zskiplistNode;
+```
+
+![](https://cdn.xiaolincoding.com/gh/xiaolincoder/redis/%E6%95%B0%E6%8D%AE%E7%B1%BB%E5%9E%8B/3%E5%B1%82%E8%B7%B3%E8%A1%A8-%E8%B7%A8%E5%BA%A6.png)
+
+</br>
+
+- 跳表
+```
+typedef struct zskiplist {
+    //头节点、尾节点指针
+    struct zskiplistNode *header, *tail;
+    //跳表长度
+    unsigned long length;
+    //最大层数
+    int level;
+} zskiplist;
+```
+
+#### 查询过程
+1. 从头节点最高层开始，遍历每一层；
+2. 对每个节点通过`元素值`和`权重值`进行比较
+> 若**当前节点权重 < 要查找的权重**，访问该层的下一个节点；
+> 若 **当前节点权重 == 要查找的权重 && 当前节点元素值 < 要查找的元素值**，访问该层的下一个节点；
+> 否则，通过该节点**level数组**访问下一层，继续遍历
+
+</br>
+
+此过程类似递归，比如：
+在下图所示跳表中查询 「元素：abcd，权重：4」
+
+![](https://cdn.xiaolincoding.com/gh/xiaolincoder/redis/%E6%95%B0%E6%8D%AE%E7%B1%BB%E5%9E%8B/3%E5%B1%82%E8%B7%B3%E8%A1%A8-%E8%B7%A8%E5%BA%A6.drawio.png "跳表查询示例")
+**当发现需要查找的元素在该层的两个相邻节点之间时，将跳转到下一层链表中进行搜索**
+- 从头节点最高层2层开始，先找到 `节点A「元素：abc，权重：3」`，不匹配，访问 `A的2层指针`，指针为空，用 `A的1层指针`访问下层的下一节点；
+- A的1层指针访问 `节点B「元素：abcde，权重：4」`，不匹配，访问 `B的1层指针`，指针为空，用 `B的0层指针`访问下层的下一节点;
+- B的0层指针为空，返回到`访问B节点的上一个节点`,即 A，通过`A的0层指针`访问`节点C「元素：abcd，权重：4」`
+
+</br>
+
+#### 层数设置
+- 跳表的相邻两层的节点数量最理想的比例是 2:1（下2上1），查找复杂度可以降低到 O(logN)
+
+- 跳表在创建节点时，会在[0,1]生成一个随机数p
+> 若 `p < 0.25`，层数+1，生成下一个随机数；
+> `p > 0.25`，结束
+
+- 层高最大限制为`ZSKIPLIST_MAXLEVEL`，`头节点创建`时高度就为h
+> ZSKIPLIST_MAXLEVEL：Redis 7.0 定义为 32；Redis 5.0 定义为 64；Redis 3.0 定义为 32；
+
+#### 为什么不用 平衡树 而用 跳表
+1. 从实现上看
+对于插入、删除操作来说，平衡树可能引发子树调整（如 b+树 的节点分裂、合并），而跳表只需要修改相邻节点的指针；
+
+2. 从内存占用上看
+平衡树节点固定具有两个指针，而跳表的指针数量平均为`1/(1-p)`（p为上面roll点的分界值），一般而言，后者占用内存更少；
+
+3. 从实际使用上看
+做**范围查找**时，当找到范围上限或者下限之后：平衡树还需要中序遍历寻找其他范围内的值，这并不容易实现；而跳表只需要对同层节点进行遍历；
+
+</br>
+
+### quicklist
+- 本身是**双向链表**，表中每个元素是个**压缩链表**；
+- 因为压缩列表元素越少或越小，连锁更新带来的影响就越小，从而提供了更好的访问性能 **==>** 通过控制每个链表节点中的压缩列表的大小或者元素个数，来规避连锁更新的问题。；
+
+#### 数据结构
+- 表
+```
+typedef struct quicklist {
+     //quicklist的链表头
+     quicklistNode *head;
+
+     //quicklist的链表尾
+     quicklistNode *tail;
+
+     //所有压缩列表中的总元素个数
+     unsigned long count;
+
+     //quicklistNodes的个数
+     unsigned long len;
+     ...
+}quicklist;
+```
+
+- 表节点
+```
+typedef struct quicklistNode {
+    //前一个quicklistNode
+    struct quicklistNode *prev;
+
+    //下一个quicklistNode
+    truct quicklistNode *next;
+
+    //quicklistNode指向的压缩列表
+    unsigned char *zl; 
+
+    //压缩列表的的字节大小
+    unsigned int sz;   
+
+    //压缩列表的元素个数
+    unsigned int count : 16; 
+    ···
+} quicklistNode;
+```
+
+![](https://cdn.xiaolincoding.com//mysql/other/f46cbe347f65ded522f1cc3fd8dba549.png "quicklist数据结构")
+
+> 当添加元素时，首先检查插入位置的节点压缩列表是否能放得下，若放不下，才创建新quicklistNode
+
+</br>
+
+### listpack
+**每个节点不再包含前一个节点的长度** ==> 避免[连锁更新]，替代压缩列表
+
+#### 数据结构
+
+![](https://cdn.xiaolincoding.com//mysql/other/c5fb0a602d4caaca37ff0357f05b0abf.png "listpack数据结构")
+
+- **encoding** 元素的编码类型，针对不同长度的整数和字符串
+- **data** 实际存放的数据
+- **len** encoding+data的总长度
+
+
