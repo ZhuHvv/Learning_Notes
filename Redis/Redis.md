@@ -808,9 +808,7 @@ Redis6.0开始全面支持多线程
      >
   2. 模块定时器处理器moduleTimerHandler
 
-#### aeEventLoop
-
-![](https://pdai.tech/images/db/redis/db-redis-event-1.png "Redis事件机制示意图")
+</br>
 
 ## Redis持久化
 
@@ -1054,7 +1052,18 @@ RDB 文件的加载工作是在服务器启动时自动执行的
 
 ## Redis内存淘汰
 
-### 不进行数据淘汰--noeviction
+当Redis的运行内存达到所设置的最大运行内存（maxmemory B）时，触发内存淘汰策略;
+
+> - 64位OS中，maxmemory默认值=0，表示没有内存大小限制；
+> - 32位OS中，maxmemory默认值=3G，32位机器内存最大仅为4G，留1G给系统本身；
+
+- `config get maxmemory-policy`命令查看当前Redis内存淘汰策略；
+- `config set maxmemory-policy <policy>`命令暂时性修改当前Redis内存淘汰策略为`<policy>`，立即生效，重启失效；
+- 修改Redis文件配置中`maxmemory-policy <policy>`，重启后生效，且一直有效；
+
+### 不进行数据淘汰的策略
+
+#### noeviction
 
 Redis3.0后默认的内存淘汰策略；
 
@@ -1064,4 +1073,119 @@ Redis3.0后默认的内存淘汰策略；
 
 若只是查询或删除，无妨；
 
-### 进行数据淘汰
+### 进行数据淘汰的策略
+
+#### 淘汰范围==设置过期时间的数据
+
+##### volatile-random
+
+随机淘汰；
+
+##### volatile-ttl
+
+优先淘汰更早过期的；
+
+##### volatile-lru（Redis3.0前默认）
+
+淘汰最久未被使用的；
+
+##### volatile-lfu（Redis4.0新增）
+
+淘汰最不频繁被使用的；
+
+#### 淘汰范围==所有数据
+
+##### allkeys-random
+
+随即淘汰；
+
+##### allkeys-lru
+
+淘汰最久未被使用的；
+
+##### allkeys-lfu（Redis4.0新增）
+
+淘汰最不频繁被使用的
+
+### LRU vs LFU
+
+Redis对象部分定义：
+
+```Redis对象部分结构
+typedef struct redisObjetct{
+  ···
+  //24位
+  unsigned lru:24;
+  ···
+}
+```
+
+#### LRU
+
+- 避免传统LRU实现的问题：
+
+  > 1. 用**链表**管理所有的缓存数据 $\longrightarrow$ 空间开销；
+  > 2. 数据被访问，需要将链表中对应的节点移动到表头$\longrightarrow$时间、性能开销；
+  >
+- Redis实现方式：
+
+  > 1. 在对象结构体中**lru属性**记录**最后一次被访问的时间戳**；
+  > 2. 淘汰时，**随机采样**，随机取若干值，淘汰其中**最久没被使用**的；
+  >
+- 问题：
+  **缓存污染**：某些数据被访问次数很少，但在缓存中待的时间很久；
+
+#### LFU
+
+根据访问频率进行淘汰；
+
+- Redis对象lru属性
+
+  > 1. 高**16**位存储**ldt：访问key的时间戳**；
+  > 2. 低**8**位存储**logc：key的被访问频次**，初始值=5，logc越小表示使用频率越低；
+  >
+- logc变化规则
+
+  1. 当对应的key被访问是，会使用LFULogIncr()对logc的值进行更新；
+  2. 进行淘汰时，会使用LFUDecrAndReturn()对淘汰范围内Redis对象的logc进行计算，从而淘汰logc最小的键值；
+
+  > - logc的值会随时间推移而衰减，衰减的值取决于**前后两次访问的时间差**；
+  > - 对应的key被访问时，还需要**按一定概率**对logc进行**增加**；
+  > - **lfu-decay-time**：单位：分钟，默认为1，用于调整logc**衰减速度**；
+  > - **lfu-log-factor**：用于调整logc**增长速度**；
+  >
+
+  ```
+  // 更新LFU计数器的算法
+  uint8_t LFULogIncr(uint8_t counter) {
+      if (counter == 255) return 255;  // 达到最大值
+
+      // 计算随机增加概率
+      double r = (double)rand()/RAND_MAX;
+      double baseval = counter - LFU_INIT_VAL;  // LFU_INIT_VAL=5
+      if (baseval < 0) baseval = 0;
+
+      // 概率公式：1/(衰减因子 * 计数器值 + 1)
+      double p = 1.0/(baseval * server.lfu_log_factor + 1);
+
+      if (r < p) counter++;  // 以概率p增加计数器
+
+      return counter;
+  }
+
+  // 计算衰减后的计数器值
+  unsigned long LFUDecrAndReturn(robj *o) {
+      // 获取最后访问时间（高16位）
+      unsigned long ldt = o->lru >> 8;
+      // 获取当前计数器值（低8位）
+      unsigned long counter = o->lru & 255;
+
+      // 计算经过的分钟数
+      unsigned long num_periods = server.lfu_decay_time ? 
+          LFUTimeElapsed(ldt) / server.lfu_decay_time : 0;
+
+      if (num_periods)
+          counter = (num_periods > counter) ? 0 : counter - num_periods;
+      return counter;
+  }
+  ```
