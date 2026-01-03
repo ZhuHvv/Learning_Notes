@@ -1,3 +1,7 @@
+---
+以小林coding图解redis为主脉，附加各种延伸内容；
+感谢小林coding，感谢代码随想录，感谢知乎，感谢各种社区和论坛；
+---
 # Redis Notes
 
 命令行客户端
@@ -718,19 +722,23 @@ typedef struct quicklistNode {
 
 ## Reids线程模型
 
-Redis6.0开始全面支持多线程
+### 单线程（Redis4.0之前）
 
-### 单线程
+`网络IO`、`键值对读写`由**单一线程**完成，在主线程**顺序串行**完成各条命令请求；
 
-`网络IO`、`键值对读写`由**单一线程**完成，在主线程**顺序串行**完成各条命令请求
+一条命令的 `读`$\longrightarrow$`解析`$\longrightarrow$`执行`$\longrightarrow$`写` 都由唯一线程完成；
 
-### 多线程
+### “多”线程
 
-采用**Reactor模型**
+1. Redis作为内存数据库，CRUD的执行非常快，性能瓶颈更多是在网络IO上；
+2. **核心命令执行模块是单线程的**，即处理客户端的 GET、SET、HGET 等数据操作命令时，始终只有一个线程在工作；
 
-1. 利用**I/O多路复用**，主reactor(主线程)监听
-2. 从reactor（线程池）分别负责一部分I/O请求，分发给具体的handler（线程池）处理线程
-3. 处理完成后，从reactor向外部返回结果
+   > - 避免传统多线程的上下文切换浪费资源；
+   > - 避免传统多线程锁的竞争；
+   >
+3. Redis4.0引入`UNLINK`命令，由后台线程异步执行删除操作；
+4. Redis6.0引入多线程IO，IO线程负责**读网络$\rightarrow$接收客户端命令**、**写网络$\rightarrow$返回结果**（也就是命令的`读`、`写`由IO线程完成，但命令的解析和执行依然由主线程完成）；
+5. 需结合事件机制中的文件事件
 
 </br>
 
@@ -809,6 +817,53 @@ Redis6.0开始全面支持多线程
   2. 模块定时器处理器moduleTimerHandler
 
 </br>
+
+## “多”线程与事件机制结合梳理
+
+### IO多路复用
+
+[IO多路复用——深入浅出理解select、poll、epoll的实现 - 知乎](https://zhuanlan.zhihu.com/p/367591714)
+
+epoll：[从青铜到王者：带你吃透epoll核心机制-51CTO.COM](https://server.51cto.com/article/814165.html)
+
+### 以epoll为例过程
+
+![](https://pic1.zhimg.com/v2-97e9acf83e6dbd659fdbfed9a914ae86_1440w.jpg)
+
+- aeEventLoop在且只在主线程中；
+- 图中的未就绪文件事件表描述不准确，应为**注册文件事件表**，存储所有**已注册**的事件的相关信息，比如：读事件or写事件、回调函数指针等；q其中元素定义如下：
+
+  ```
+  typedef struct aeFileEvent {
+      int mask;                 // AE_READABLE | AE_WRITABLE
+      aeFileProc *rfileProc;    // 读事件回调
+      aeFileProc *wfileProc;    // 写事件回调
+      void *clientData;         // client 指针
+  } aeFileEvent;
+  ```
+
+1. 主线程事件循环
+
+   ```
+   while (!server.shutdown) {
+       aeProcessEvents(eventLoop);
+   }
+
+   aeProcessEvents():
+   1. aeApiPoll()           // epoll_wait
+   2. processFileEvents()  // 处理 fired 事件
+   3. processTimeEvents()  // 时间事件
+   4. processIOThreads()或handleClientsWithPendingReadsUsingThreads()   // ★ Redis 6+ 新增阶段，接管IO线程处理结果
+   ```
+2. aeApiPoll()：主线程调用`epoll_wait`，系统内核从epoll红黑树中找到所有就绪事件，放入epoll就绪事件表；
+3. 主线程从epoll就绪事件表中将上一步得到的就绪事件，经过一定转换（如 `fired[0] = { fd=5, mask=AE_READABLE }`），放入aeEventLoop.fired；
+4. processFileEvents()：主线程遍历aeEventLoop.fired，对每个就绪事件从aeEventLoop.events中找到相应的**回调函数**；
+5. processTimeEvents()：时间事件处理类似；
+6. 在回调函数中，主线程会将需要分配出去的IO操作分配给对应的IO线程（有些回调，比如接受新连接，主线程自己就能搞定，不需要交给IO线程）；
+7. processIOThreads()：
+
+   - 读：IO线程执行`read()`将socket发来的命令读入对应请求的`client对象`的`querybuf`中，主线程执行`processInputBuffer()`，读出命令并解析、执行；
+   - 写：主线程执行命令的过程中把结果写入对应请求的`client对象`的`replybuf`，IO线程执行`write()`，将缓冲区的内容通过socket发送给客户端；对于写命令来说，这一阶段主线程是要回收write()的执行结果，并决定是否继续监听`AE_WRITABLE`(可能结果比较大，一次写不完)；
 
 ## Redis持久化
 
@@ -1229,10 +1284,10 @@ typedef struct redisObjetct{
 
 #### 阶段二：主服务器同步数据给从服务器
 
-1. 主服务器执行`bgsave`命令生成RDB文件，并将此文件发送给从服务器；
+1. 主服务器执行`bgsave`命令生成RDB文件（子进程），并将此文件异步发送给从服务器（主进程、事件机制）；
 2. 从服务器收到RDB文件后，先清空当前数据，再载入RDB文件；
 3. 由之前的知识可知，`bgsave`命令是启动子进程生成RDB文件，此时主进程并未阻塞，因此可以继续响应写命令 $\longrightarrow$ 执行bgsave命令之后的数据修改会导致主从服务器之间的数据不一致；
-4. 为解决上述问题，主服务器在 **生成RDB文件期间**、**发送RDB文件期间**、**从服务器加载RDB文件期间** 将收到的写操作命令写入**replication buffer缓冲区**；（说白了，就是在 `执行bgsave命令 到 从服务器加载完RDB文件` 这段时间）
+4. 为解决上述问题，主服务器在 **生成RDB文件期间**、**发送RDB文件期间**、**从服务器加载RDB文件期间** 将收到的写操作命令写入**replication buffer缓冲区**（每个从服务器对应一个）；（说白了，就是在 `执行bgsave命令 到 从服务器加载完RDB文件` 这段时间）
 
 #### 阶段三：主服务器发送 新·写指令 给从服务器
 
@@ -1250,7 +1305,7 @@ typedef struct redisObjetct{
 #### 原本模式的问题
 
 1. 由于 `fork()` 产生子进程会阻塞主进程，当主服务器有多个从服务器时，每进行一次主从复制的首次同步都需要执行一次 `fork()` 可能导致主服务器无法正常处理数据读写请求；
-2. 传输RDB文件会占用网络带宽；
+2. 传输RDB文件在主进程执行，会占用网络带宽；
 
 #### 解决$\longrightarrow$从服务器分级
 
@@ -1258,7 +1313,6 @@ typedef struct redisObjetct{
 - 低层次从服务器执行`replicaof <高层次从服务器IP> 6379`成为高层次从服务器的从服务器；
 
 ![](https://cdn.xiaolincoding.com//mysql/other/4d850bfe8d712d3d67ff13e59b919452.png "分摊主服务器压力组织形式示意图")
-
 
 ### 增量复制
 
@@ -1277,7 +1331,6 @@ typedef struct redisObjetct{
 2. 主服务器收到后，以`CONTINUE`命令响应从服务器，表明采用增量同步；
 3. 主服务器发送断连期间的写命令给从服务器，从服务器执行；
 
-
 #### 增量感知
 
 ![](https://cdn.xiaolincoding.com//mysql/other/2db4831516b9a8b79f833cf0593c1f12.png "增量感知示意图")
@@ -1285,7 +1338,7 @@ typedef struct redisObjetct{
 ##### repl_backlog_buffer
 
 - **环形**缓冲区；
-- 当主服务器进行**命令传播**时，除了发给从服务器，也会将写命令写入这个buffer；
+- 当主服务器进行**命令传播**时，除了发给从服务器，也会将写命令写入这个buffer（主服务器就这一个，和第一次同步中的replication buffer不一样）；
 
 ##### replication offset
 
