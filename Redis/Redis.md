@@ -530,7 +530,7 @@ Redis在实际使用哈希表时，定义了一个`dict`结构体，内部属性
 
 #### 数据结构
 
-```
+```c
 typedef struct intset {
     //编码方式
     uint32_t encoding;
@@ -570,7 +570,7 @@ typedef struct intset {
 
 - 跳表节点
 
-```
+```c
 typedef struct zskiplistNode {
     //Zset 对象的元素值
     sds ele;
@@ -595,7 +595,7 @@ typedef struct zskiplistNode {
 
 - 跳表
 
-```
+```c
 typedef struct zskiplist {
     //头节点、尾节点指针
     struct zskiplistNode *header, *tail;
@@ -661,7 +661,7 @@ typedef struct zskiplist {
 
 - 表
 
-```
+```c
 typedef struct quicklist {
      //quicklist的链表头
      quicklistNode *head;
@@ -680,7 +680,7 @@ typedef struct quicklist {
 
 - 表节点
 
-```
+```c
 typedef struct quicklistNode {
     //前一个quicklistNode
     struct quicklistNode *prev;
@@ -786,7 +786,7 @@ typedef struct quicklistNode {
      >
 - 时间事件源码定义：
 
-  ```
+  ```c
   typedef struct aeTimeEvent {
       /* 全局唯一ID */
       long long id; /* time event identifier. */
@@ -833,7 +833,7 @@ epoll：[从青铜到王者：带你吃透epoll核心机制-51CTO.COM](https://s
 - aeEventLoop在且只在主线程中；
 - 图中的未就绪文件事件表描述不准确，应为**注册文件事件表**，存储所有**已注册**的事件的相关信息，比如：读事件or写事件、回调函数指针等；q其中元素定义如下：
 
-  ```
+  ```c
   typedef struct aeFileEvent {
       int mask;                 // AE_READABLE | AE_WRITABLE
       aeFileProc *rfileProc;    // 读事件回调
@@ -844,16 +844,18 @@ epoll：[从青铜到王者：带你吃透epoll核心机制-51CTO.COM](https://s
 
 1. 主线程事件循环
 
-   ```
+   ```c
    while (!server.shutdown) {
        aeProcessEvents(eventLoop);
    }
 
+   /*
    aeProcessEvents():
-   1. aeApiPoll()           // epoll_wait
-   2. processFileEvents()  // 处理 fired 事件
-   3. processTimeEvents()  // 时间事件
-   4. processIOThreads()或handleClientsWithPendingReadsUsingThreads()   // ★ Redis 6+ 新增阶段，接管IO线程处理结果
+   1. aeApiPoll()        epoll_wait
+   2. processFileEvents()  处理 fired 事件
+   3. processTimeEvents()  时间事件
+   4. processIOThreads()或handleClientsWithPendingReadsUsingThreads()   ★ Redis 6+ 新增阶段，接管IO线程处理结果
+   */
    ```
 2. aeApiPoll()：主线程调用`epoll_wait`，系统内核从epoll红黑树中找到所有就绪事件，放入epoll就绪事件表；
 3. 主线程从epoll就绪事件表中将上一步得到的就绪事件，经过一定转换（如 `fired[0] = { fd=5, mask=AE_READABLE }`），放入aeEventLoop.fired；
@@ -945,7 +947,7 @@ AOF日志文件中存**文本**
 > 避免重写过程中出现意外导致原本的AOF日志文件失效
 > 示例：
 
-```
+```bash
 //假设现有 AOF 文件内容（完整）：
 SET key1 value1
 SET key2 value2
@@ -1166,7 +1168,7 @@ Redis3.0后默认的内存淘汰策略；
 
 Redis对象部分定义：
 
-```Redis对象部分结构
+```c
 typedef struct redisObjetct{
   ···
   //24位
@@ -1210,7 +1212,7 @@ typedef struct redisObjetct{
   > - **lfu-log-factor**：用于调整logc**增长速度**；
   >
 
-  ```
+  ```c
   // 更新LFU计数器的算法
   uint8_t LFULogIncr(uint8_t counter) {
       if (counter == 255) return 255;  // 达到最大值
@@ -1406,6 +1408,8 @@ Redis2.8及之后版本；
 
 - quorum一般设定为**哨兵数量/2+1**
 
+</br>
+
 ### 选主
 
 #### 推选Leader
@@ -1420,4 +1424,174 @@ Redis2.8及之后版本；
    > 2. 得票数大于等于quorum值；
    >
 
+#### 补充： INFO命令
+
+查看状态信息的命令，返回关于 Redis 服务器的各种信息和统计数值。
+
+一般情况下，哨兵向所监控节点发送频率是**每十秒一次**；
+
+使用方法有如下三种：
+
+1. `info：部分Redis系统状态统计信息。`
+2. `info all：全部Redis系统状态统计信息。`
+3. `info section：某一块的系统状态统计信息，其中section可以忽略大小写。`
+
+详细内容如下表格：
+
+
+| 参数名      | 说明                                                   |
+| ----------- | ------------------------------------------------------ |
+| server      | 获取 server 信息                                       |
+| clients     | 获取 clients 信息，如客户端连接数等                    |
+| memory      | 获取 server 的内存信息，包括当前内存消耗、内存使用峰值 |
+| persistence | 获取 server 的持久化配置信息                           |
+| stats       | 获取 server 的一些基本统计信息，如处理过的连接数量等   |
+| replication | 获取 server 的主从配置信息                             |
+| cpu         | 获取 server 的 CPU 使用信息                            |
+| keyspace    | 获取 server 中各个 DB 的 key 的数量                    |
+| cluster     | 获取集群节点信息，仅在开启集群后可见                   |
+| commandstas | 获取每种命令的统计信息                                 |
+
 #### 选新主节点
+
+![](https://cdn.xiaolincoding.com/gh/xiaolincoder/redis/%E5%93%A8%E5%85%B5/%E9%80%89%E4%B8%BB%E8%BF%87%E7%A8%8B.webp)
+
+1. 过滤网络连接状态不好的节点；
+
+   > - **down-after-milliseconds * 10**：哨兵检查`上次从各个节点收到PING命令响应的时间与当前时间的时差`，若时差超过down-after-milliseconds * 10，就pass掉；
+   >
+2. 优先级考察，选出优先级最高的节点；
+
+   > - **slave-priority**：此配置项值越小说明优先级越高；
+   > - 哨兵通过定期向从节点发送**INFO**命令，从回复中获取；
+   > - 若选出有多个，则进行下一步考察；
+   >
+3. 复制进度考察，选出复制进度最靠前的节点；
+
+   > - 根据从节点的**slave_repl_offset**与主节点的**master_repl_offset**，越接近的从节点复制进度越靠前；
+   > - 同样从**INFO**命令的回复中获取
+   > - 若选出有多个，则进行下一步考察；
+   >
+4. ID号考察，选出ID号最小的节点；
+
+   > - 通过**INFO**命令的回复获取；
+   >
+5. Leader向选中的从节点（下称天命点）发送**SLAVEOF no one**命令，解除其从节点身份；
+6. Leader以**每秒一次**的频率向天命之点发送`INFO`命令，若收到的回复中的**角色信息**从**slave**变成**master**，表面天命点已经顺利升级；
+7. Leader向**原主节点的下属从节点**发送**SLAVEOF \<ip> \<port>**命令，使它们指向天命点;
+
+</br>
+
+### 通知
+
+将新主节点的信息告知客户端
+
+#### 发布/订阅机制
+
+**消息通信模式**
+
+##### 组成
+
+1. 发布者（Publisher）：向频道发送消息；
+2. 订阅者（Subscriber）：从频道接收消息；
+3. 频道（Channel）：消息传递的媒介；
+
+##### 流程
+
+1. **订阅频道**：订阅者通过 `SUBSCRIBE` 命令订阅一个或多个频道;
+2. **发布消息**：发布者通过 `PUBLISH` 命令向指定频道发送消息;
+3. **接收消息**：所有订阅了该频道的订阅者都会接收到消息;
+4. 取消订阅：订阅者通过`UNSUBSCRIBE`和`PUNSUBSCRIBE`命令取消订阅;
+
+##### 模式订阅
+
+允许订阅者使用`PSUBSCRIBE`命令通过**通配符**订阅多个频道
+
+```java
+# 订阅者
+PSUBSCRIBE news.*
+ 
+# 发布者
+PUBLISH news.sports "Match started!"
+PUBLISH news.weather "Sunny day!"
+
+# 订阅者会收到 `news.sports` 和 `news.weather` 两个频道的消息
+```
+
+##### 底层实现
+
+###### 数据结构
+
+Redis 使用 **字典（Hash Table）** 和 **链表** 管理 Pub/Sub 的订阅关系：
+
+* **频道订阅字典**：`pubsub_channels`
+
+  * Key：频道名称（如 `news.sports`）；
+  * Value：订阅该频道的客户端链表（链表节点为客户端指针）；
+
+  ```c
+  struct redisServer {
+      dict *pubsub_channels;  // 频道订阅字典
+      list *pubsub_patterns;  // 模式订阅链表
+  };
+  ```
+* **模式订阅链表**：`pubsub_patterns`
+  存储包含通配符的订阅关系，每个节点保存：
+
+  * 客户端指针；
+  * 订阅的模式（如 `news.*`）；
+
+###### 订阅流程
+
+* **订阅频道（SUBSCRIBE）**：
+
+  1. 检查 `pubsub_channels` 字典中是否存在该频道键；
+  2. 若不存在，创建新键并将客户端添加到链表；若存在，直接追加到链表末尾；
+
+  ```bash
+  SUBSCRIBE news.sports  # 客户端订阅频道
+  ```
+* **订阅模式（PSUBSCRIBE）**：
+
+  1. 将客户端和模式添加到 `pubsub_patterns` 链表；
+
+  ```bash
+  PSUBSCRIBE news.*      # 订阅所有以 `news.` 开头的频道
+  ```
+
+###### 发布流程
+
+1. **发送到频道订阅者**：
+   * 在 `pubsub_channels` 字典中查找频道对应的客户端链表；
+   * 遍历链表，向每个客户端发送消息；
+2. **发送到模式匹配的订阅者**：
+   * 遍历 `pubsub_patterns` 链表，检查发布内容的频道名称是否与模式匹配（如 `news.sports` 匹配 `news.*`）；
+   * 向匹配的客户端发送消息；
+
+#### 通知
+
+- 每个哨兵节点提供发布者/订阅者机制，具体事件对应频道，客户端可以订阅相应频道的消息；
+  ![](https://cdn.xiaolincoding.com/gh/xiaolincoder/redis/%E5%93%A8%E5%85%B5/%E5%93%A8%E5%85%B5%E9%A2%91%E9%81%93.webp)
+- 主从切换完成后，哨兵向`+switch-master`频道发送**新主节点**的**IP地址**、**端口**，客户端收到后，通过新主节点进行通信；
+
+#### 旧主节点转为从节点
+
+- 哨兵继续监控旧主节点，当它重新上线，发送`SLAVEOF`命令，使其成为从节点；
+
+</br>
+
+### 哨兵集群组成方式
+
+#### 哨兵间互相发现、通信；
+
+- 原本的主从节点集群中，主节点有`_sentinel_:hello`频道；
+- 某哨兵向此频道发送自己的IP地址和端口号，其他哨兵订阅此频道并接收消息，获知IP和端口信息，就可以与之建立连接；
+
+![](https://cdn.xiaolincoding.com//picgo/a6286053c6884cf58bf397d01674fe80.png)
+
+#### 哨兵知晓从节点
+
+- 主节点知道所有从节点的信息；
+- 哨兵以10秒1次的频率向主节点发送`INFO`命令，以此获取从节点信息，从而与各个从节点建立连接；
+
+![](https://cdn.xiaolincoding.com//picgo/fdd5f695bb3643258662886f9fba0aab.png)
