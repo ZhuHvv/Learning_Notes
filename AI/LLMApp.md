@@ -86,7 +86,7 @@ This is a note of Something about AI
 
 系统提示词效果取决于**底模的指令遵循能力、上下文处理能力**；
 
-![](LA_images\\SysPromptUsage.png)
+![](LA_images\SysPromptUsage.png)
 
 #### 构造
 
@@ -183,7 +183,7 @@ This is a note of Something about AI
 #### 运行机制
 
 Agent Loop 智能体循环
-![](LA_images//AgentLoop.png)
+![](LA_images\AgentLoop.png)
 
 ##### 感知 Perception
 
