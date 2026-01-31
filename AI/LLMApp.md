@@ -130,7 +130,7 @@ This is a note of Something about AI
 
 参考：
 
-1. https://github.com/datawhalechina/hello-agents.git
+1. [https://github.com/datawhalechina/hello-agents.git](https://github.com/datawhalechina/hello-agents.git)
 2. [什么是AI Agent？AI Agent综述，看这一篇就够了！ - 知乎](https://zhuanlan.zhihu.com/p/1895877953453265781)
 
 ### 概念
@@ -146,38 +146,38 @@ This is a note of Something about AI
 
   > 常见的有：
   >
-  > * 任务是否完成（success / fail）
-  > * 输出是否正确
-  > * 是否遵守约束
-  > * 成本（token / money）
-  > * 时间（延迟）
-  > * 安全性（是否违规）
+  > - 任务是否完成（success / fail）
+  > - 输出是否正确
+  > - 是否遵守约束
+  > - 成本（token / money）
+  > - 时间（延迟）
+  > - 安全性（是否违规）
   >
 - **E**nvironment 环境——Agent所处的外部世界或上下文，包括可以感知和影响的部分；
 
   > 对于LLM Agent来说，比如以下这些：
   >
-  > * 工具集合（API、DB、Search）
-  > * 外部系统（文件系统、Web、业务系统）
-  > * 对话上下文
-  > * 任务状态
+  > - 工具集合（API、DB、Search）
+  > - 外部系统（文件系统、Web、业务系统）
+  > - 对话上下文
+  > - 任务状态
   >
 - **A**ctuators 执行器——Agent 对环境施加影响的方式，也就是能够做的；
 
-  > 对于LLM Agent来说，比如一下这些：
+  > 对于LLM Agent来说，比如以下这些：
   >
-  > * 调用某个 API
-  > * 写文件
-  > * 发送 HTTP 请求
-  > * 输出一段文本
-  > * 调用另一个模型
+  > - 调用某个 API
+  > - 写文件
+  > - 发送 HTTP 请求
+  > - 输出一段文本
+  > - 调用另一个模型
   >
 - **S**ensors 传感器——Agent感知环境的工具或输入通道，用于获取信息；
 
-  > 对于LLM Agent来说，比如一下这些：
+  > 对于LLM Agent来说，比如以下这些：
   >
-  > * 用户输入
-  > * 工具返回结果
+  > - 用户输入
+  > - 工具返回结果
   >
 
 #### 运行机制
@@ -205,3 +205,62 @@ Agent决策阶段，由LLM驱动的内部推理，即调用AI来思考；
 
 - Agent通过执行器进行具体行动，通常就是使用选定的工具对环境施加影响；
 - **引起环境状态变化**，从而产生新的观察，用于下一轮的感知；
+
+## Function Calling 函数调用
+
+### 概念
+
+- AI大模型在处理任务时，能够**识别特定的指令或提示**，进而**生成结构化的工具调用意图**，让应用层**调用预先定义好的外部函数（工具）**来完成特定功能；
+
+### 流程
+
+1. 使用**JSON**格式定义`Tool Schema(函数描述)`，并且System Prompt允许LLM使用工具；
+   工具描述示例：
+
+   ```json
+    {
+     //工具名称
+     "name": "get_weather",
+     //工具功能说明
+     "description": "当用户询问某个城市的天气情况时使用",
+     //参数列表
+     "parameters": {
+       "type": "object",
+       "properties": {
+         "city": { "type": "string" },
+         "data": { "type": "string" }
+       },
+       //必须传递的参数
+       "required": ["city"]
+     }
+   }
+   ```
+2. 用户输入User Prompt，LLM对输入进行推理，进行**语义识别**，如果判断用户需求不能由模型本身完成，即需要使用工具。LLM会根据工具描述中的信息，决定 使用哪个工具、传入什么参数，生成**结构化JSON**作为调用请求；
+   调用的结构化JSON示例如下：
+
+   ```json
+   {
+     "function_call":{//固定字段，表示这是一个工具调用请求
+      "name": "get_weather",
+      "parameters": {
+        "city": "上海",
+        "unit": "celsius",
+        "date": "2026-2-1"
+      }
+    }
+   }
+   ```
+3. 系统（应用层）得到调用请求，做必要的安全性检查之后对工具进行实际调用；
+   得到结果示例如下：
+
+   ```json
+   weather_data = {
+       "city": "上海",
+       "time": "2026-2-1",
+       "weather_condition": "晴",
+       "temperature": "25℃"
+   }
+   ```
+4. 将得到的结果作为输入回传给LLM，LLM对结果格式和内容做一定的修改、补充;
+
+## MCP（Model Context Protocol）
