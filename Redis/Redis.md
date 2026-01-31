@@ -1952,7 +1952,7 @@ tip：后续以 [数据库] 代指硬盘层的数据库；
 
 - **二进制位数组** + **k个哈希函数**
 - 数组长度为`n`，**1b代表1个元素**
-  ![](D:\Codes\Learning_Notes\Redis\images\bloomFilterArray.png)
+  ![](images\bloomFilterArray.png)
 
 #### 原理
 
@@ -1986,7 +1986,7 @@ P $\approx$(1 - e^(-km/n)^)^k^
 
 ###### 参数选择
 
-![](D:\Codes\Learning_Notes\Redis\images\bloomFilterParamsChoose.png)
+![](images\bloomFilterParamsChoose.png)
 
 <br>
 
@@ -2145,7 +2145,7 @@ P $\approx$(1 - e^(-km/n)^)^k^
 - 缓存消费消息队列进行删除，并通过`ACK`机制确认处理此消息，删除成功回复ACK给消息队列；
 - 若删除失败，**针对失败的key**重新构造缓存操作，以待重试；
 
-![](D:\Codes\Learning_Notes\Redis\images\binlogSync.png)
+![](images\binlogSync.png)
 
 ##### 缺陷
 
