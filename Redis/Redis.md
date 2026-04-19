@@ -143,37 +143,39 @@ Redis是key-value型数据库，key一般是 `String`类型，value类型则不�
 
 1. SDS(简单动态字符串)
 
-- 可保存**文本数据、二进制数据**
+   - 可保存**文本数据、二进制数据**
 
-> SDS使用 `len`属性判断字符串是否结束；
-> 所有的SDS API都以 `二进制方式`处理SDS存放在 `buf[]`数组中的数据；
+   > SDS使用 `len`属性判断字符串是否结束；
+   > 所有的SDS API都以 `二进制方式`处理SDS存放在 `buf[]`数组中的数据；
+   >
 
-- 获取字符串长度的时间复杂度为O(1)
-- SDS API是安全的，拼接不会缓冲区溢出
+   - 获取字符串长度的时间复杂度为O(1)
+   - SDS API是安全的，拼接不会缓冲区溢出
 
-> 拼接前会检查空间是否满足，不足会自动扩容
-
-1. 内部编码(encoding)
+   > 拼接前会检查空间是否满足，不足会自动扩容
+   >
+2. 内部编码(encoding)
    ![](https://cdn.xiaolincoding.com/gh/xiaolincoder/redis/%E6%95%B0%E6%8D%AE%E7%B1%BB%E5%9E%8B/string%E7%BB%93%E6%9E%84.png)
 
-- int
-  保存二进制64位有符号整数；
-  字符串对象的**ptr指针直接赋值**为所存整数，不再指向
-  ![](https://cdn.xiaolincoding.com/gh/xiaolincoder/redis/%E6%95%B0%E6%8D%AE%E7%B1%BB%E5%9E%8B/int.png)
-- embstr
-  保存字符串，长度<=32B
-  用SDS保存
-  分配**一次**内存，字符串对象和SDS**连续存储**
+   - int
+     保存二进制64位有符号整数；
+     字符串对象的**ptr指针直接赋值**为所存整数，不再指向
+     ![](https://cdn.xiaolincoding.com/gh/xiaolincoder/redis/%E6%95%B0%E6%8D%AE%E7%B1%BB%E5%9E%8B/int.png)
+   - embstr
+     保存字符串，长度<=44B
+     用SDS保存
+     分配**一次**内存，字符串对象和SDS**连续存储**
 
-> - 由于连续分配，所以需要扩容时要重新分配内存，开销大，因此 embstr编码的对象**实际上是只读**的
-> - 对 embstr对象执行修改命令，会先转换成raw，再执行
+   > - 由于连续分配，所以需要扩容时要重新分配内存，开销大，因此 embstr编码的对象**实际上是只读**的
+   > - 对 embstr对象执行修改命令，会先转换成raw，再执行
+   >
 
-![](https://cdn.xiaolincoding.com/gh/xiaolincoder/redis/%E6%95%B0%E6%8D%AE%E7%B1%BB%E5%9E%8B/embstr.png)
+   ![](https://cdn.xiaolincoding.com/gh/xiaolincoder/redis/%E6%95%B0%E6%8D%AE%E7%B1%BB%E5%9E%8B/embstr.png)
 
-- raw
-  保存字符串，长度>32B
-  分配**两次**内存，字符串对象和SDS**分开存**
-  ![](https://cdn.xiaolincoding.com/gh/xiaolincoder/redis/%E6%95%B0%E6%8D%AE%E7%B1%BB%E5%9E%8B/raw.png)
+   - raw
+     保存字符串，长度>44B
+     分配**两次**内存，字符串对象和SDS**分开存**
+     ![](https://cdn.xiaolincoding.com/gh/xiaolincoder/redis/%E6%95%B0%E6%8D%AE%E7%B1%BB%E5%9E%8B/raw.png)
 
 </br>
 
@@ -241,9 +243,9 @@ Redis是key-value型数据库，key一般是 `String`类型，value类型则不�
 
 ### Set类型
 
-无序并唯一的键值集合；
-最多存储 `2^32^-1`个元素
-特征：无序；元素不可重复；查找快；支持交集、并集、差集等功能；
+- 无序且唯一的键值集合；
+- 最多存储 `2^32^-1`个元素
+- 特征：无序；元素不可重复；查找快；支持交集、并集、差集等功能；
 
 #### 常见命令（详情见官方文档）
 
@@ -259,9 +261,9 @@ Redis是key-value型数据库，key一般是 `String`类型，value类型则不�
 #### 内部实现
 
 1. 整数集合
-   元素都是**整数**且数量小于 `512`(默认值，可修改)
+   元素都是**整数**且数量小于 `512`(默认值，可修改)；
 2. 哈希表
-   否则
+   否则；
 
 </br>
 
@@ -468,8 +470,6 @@ $~~~~~~$包括表头指针head、表尾节点tail、表节点数量len 以及可
 1. 若空间不足，则压缩列表需要重新分配空间
 2. 插入较大的元素，可能会使后续元素的 `prevlen`空间大小发生变化，导致每个需要修改的元素都要**重新分配空间**
 
-</br>
-
 示例：
 
 - 初始压缩列表，各个节点长度均小于 254B
@@ -479,11 +479,11 @@ $~~~~~~$包括表头指针head、表尾节点tail、表节点数量len 以及可
 - 触发连锁更新
   ![](https://cdn.xiaolincoding.com//mysql/other/1f0e5ae7ab749078cadda5ba0ed98eac.png)
 
-</br>
-
 #### 缺陷
 
 由于「连锁更新」的存在，所以压缩列表只会用于**保存的节点数量不多**的场景
+
+</br>
 
 ### 哈希表
 
