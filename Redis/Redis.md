@@ -103,18 +103,18 @@ Redis是key-value型数据库，key一般是 `String`类型，value类型则不�
 > 例如： 公司:项目:组:成员
 
 
-|   类型   |         例子         |
-| :-------: | :-------------------: |
-| 基本类型 |                      |
-|  String  |      hello world      |
-|   Hash   | {a:"hello",b:"world"} |
-|   List   |     [a->b->c->d]     |
-|    Set    |      {A < B < C}      |
-| SortedSet |   {A:1, B:2 , C:3}   |
-| 特殊类型 |                      |
-|    GEO    |     {A:(123,456)}     |
-|  BitMap  |     0101011010010     |
-| HyperLog |     0101011010010     |
+|    类型    |         例子         |
+| :---------: | :-------------------: |
+|  基本类型  |           /           |
+|   String   |      hello world      |
+|    Hash    | {a:"hello",b:"world"} |
+|    List    |     [a->b->c->d]     |
+|     Set     |     {A , B , C}     |
+|  SortedSet  |   {A:1, B:2 , C:3}   |
+|  特殊类型  |           /           |
+|     GEO     |     {A:(123,456)}     |
+|   BitMap   |     0101011010010     |
+| HyperLogLog |     0101011010010     |
 
 </br>
 
