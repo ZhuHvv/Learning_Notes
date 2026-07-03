@@ -270,10 +270,18 @@ Agent决策阶段，由LLM驱动的内部推理，即调用AI来思考；
 
 [MCP | 一文详解什么是 MCP以及 MCP 可以做什么-CSDN博客](https://blog.csdn.net/m0_56255097/article/details/148785847)
 
+[Model Context Protocol 官方文档](https://modelcontextprotocol.io/docs/getting-started/intro)
+
 ### 概念
 
-- 作为**中间协议层**，定义了应用程序和 AI 模型之间交换上下文信息的方式；
-- 使得开发者能够**以一致的方式将各种数据源、工具和功能连接到 AI 模型**
+- MCP 本质上是一个**开放的应用层协议 / 标准**，用于规范 MCP Client 与 MCP Server 之间如何交换工具、资源、提示词模板等上下文能力；
+- MCP 不是模型本身，也不是 Function Calling 的替代品，而是解决 **AI 应用接入外部工具时的统一适配问题**；
+- Function Calling 关注的是：LLM 如何生成结构化的工具调用意图；
+- MCP 关注的是：Host / Client 如何发现外部工具、获取工具参数描述、发送调用请求、接收工具结果；
+- 因此二者常常配合使用：MCP 负责把外部能力以标准协议暴露出来，Host 再把这些能力转换为 LLM 可理解的工具定义；
+- MCP 的底层消息采用 `JSON-RPC 2.0` 风格，常见传输方式包括：
+  1. `stdio`：本地进程之间通过标准输入 / 标准输出传递 JSON-RPC 消息；
+  2. `Streamable HTTP`：远程服务通过 HTTP 传递 JSON-RPC 消息；
 
   ![](LA_images\mcp.png)
 
@@ -283,20 +291,26 @@ Agent决策阶段，由LLM驱动的内部推理，即调用AI来思考；
 
 #### Host
 
-- 能够通过 MCP 集成外部能力的主体，比如 `Claude Desktop`；
-- 通常负责与用户、LLM交互；
-- 是Client运行的环境；
+- 能够通过 MCP 集成外部能力的 AI 应用主体，比如 `Claude Desktop`、IDE、Agent 框架等；
+- 通常负责与用户、LLM交互，并管理安全策略、用户授权、工具注册表等；
+- 是 Client 运行的环境，一个 Host 可以创建并管理多个 Client；
+- Host 决定如何把 MCP Server 暴露出的工具信息交给 LLM：
+  1. 如果模型 API 支持原生 `tools` / `function calling`，Host 通常会把 MCP 工具的 `name`、`description`、`inputSchema` 转换成模型接口所需的工具定义；
+  2. 如果模型或框架不支持原生工具调用，Host 也可能把工具说明序列化进 System Prompt、隐藏上下文或其他约定格式中；
+- 所以“LLM 知道有哪些工具”并不是 MCP Server 直接告诉 LLM，而是 **Host 先通过 MCP 发现工具，再把工具信息暴露给 LLM**；
 
 #### Client
 
 - MCP Host内部的**组件**，负责与MCP Server交互；
 - 由Host创建，并与MCP Server建立**一对一连接**；
-- 负责发现可用服务、发送调用请求、获取结果，并将这些信息传递给LLM；
+- 负责协议层面的连接初始化、能力协商、工具 / 资源 / Prompt 发现、发送调用请求、获取结果；
+- Client 获取到的信息一般会先交给 Host，由 Host 再决定如何注册为 LLM 可用的工具或上下文；
 
 #### Server
 
 - 轻量级服务程序，负责对接具体数据源或工具（如数据库、`API`等），并按照MCP规范提供标准化的功能接口；
 - 封装了特定的能力，如文件检索、数据库查询等（可能是它自身实现的，也可能是外部的API），并将结果返回给Client；
+- Server 不需要直接理解完整对话历史，也不直接面对 LLM；它只按照 MCP 协议接收请求、执行能力、返回结果；
 - 对外提供的三种**原语**：
   1. Tool工具
 
@@ -316,7 +330,84 @@ Agent决策阶段，由LLM驱动的内部推理，即调用AI来思考；
 
 ### 流程
 
-类似Function Calling；
+以 Tool 调用为例：
+
+1. Host 根据配置连接一个或多个 MCP Server，并为每个 Server 创建一个独立的 Client；
+2. Client 向 Server 发送 `initialize` 请求，进行协议版本和能力协商；
+3. Server 声明自己支持的能力，例如 `tools`、`resources`、`prompts`；
+4. Client 发送 `tools/list`，向 Server 获取可用工具列表；
+5. Server 返回工具元数据，通常包括：
+   - `name`：工具唯一名称；
+   - `description`：工具用途说明；
+   - `inputSchema`：工具参数的 JSON Schema；
+   - `outputSchema`：可选，描述结构化输出；
+6. Host 将多个 MCP Server 返回的工具汇总成统一工具注册表，并转换成 LLM 可理解的形式；
+7. LLM 在对话中判断需要调用工具时，生成结构化工具调用意图；
+8. Host 拦截该工具调用，并根据工具所属 Server，将其路由为 MCP 的 `tools/call` 请求；
+9. Server 执行工具，将结果返回给 Client；
+10. Host 再把工具结果作为上下文交回 LLM，由 LLM 生成面向用户的最终回答；
+
+#### 消息示例
+
+Client 向 Server 发现工具：
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "tools/list"
+}
+```
+
+Server 返回工具定义：
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "result": {
+    "tools": [
+      {
+        "name": "get_weather",
+        "description": "查询指定城市的天气",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "city": {
+              "type": "string"
+            }
+          },
+          "required": ["city"]
+        }
+      }
+    ]
+  }
+}
+```
+
+Client 向 Server 调用工具：
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 2,
+  "method": "tools/call",
+  "params": {
+    "name": "get_weather",
+    "arguments": {
+      "city": "上海"
+    }
+  }
+}
+```
+
+#### 与 Function Calling 的区别
+
+- Function Calling 是**模型接口层 / 推理输出层**能力：让 LLM 以结构化格式表达“我要调用哪个工具、传什么参数”；
+- MCP 是**应用协议层 / 工具接入层**能力：让 AI 应用用统一协议发现工具、调用工具、拿到结果；
+- 传统 Function Calling 往往需要开发者在应用中手动写死工具 schema 和调用逻辑；
+- MCP 可以让工具提供方通过 Server 自描述工具能力，Host 通过协议动态发现并接入这些工具；
+- 所以更准确的关系是：**MCP 提供工具接入标准，Function Calling 提供模型调用工具的表达机制**；
 
 ## Context Window 上下文窗口
 
