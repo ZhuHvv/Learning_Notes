@@ -1,0 +1,637 @@
+{
+  "version": "v11_审查修订版",
+  "created_at": "2026-07-19",
+  "base_version": "v10_LLM_RAG评估增量版",
+  "knowledge_file_count": 97,
+  "markdown_file_count": 119,
+  "renumbered": "v11 对全库重新连续编号（001-097），新旧对照见 00_v11_审查修订说明.md",
+  "merged_in_v11": [
+    {
+      "kept": "01_LLM_Transformer/012_稠密向量、稀疏向量与多向量表示及检索.md",
+      "absorbed_old": [
+        "010_Encoder-only_与_RAG_Embedding.md"
+      ]
+    },
+    {
+      "kept": "04_Go/057_Protobuf_go_package、生成路径与_proto_文件组织.md",
+      "absorbed_old": [
+        "052_Protobuf_option_go_package_与_Go_代码生成.md",
+        "053_protoc-gen-go_生成路径、source_relative_与常见报错.md",
+        "054_gRPC_proto_文件组织、package_一致性与_pb.go_导入.md"
+      ]
+    },
+    {
+      "kept": "06_MessageQueue/085_RabbitMQ_延时队列：TTL、死信交换机与延时插件.md",
+      "absorbed_old": [
+        "084_RabbitMQ_TTL_过期检测、队列头阻塞与延时消息.md"
+      ]
+    }
+  ],
+  "deleted_in_v11": [
+    "033_日志追加写入与调试输出.md（旧编号）",
+    "079_Kafka_Docker_Compose_与_volume_路径问题.md（旧编号）",
+    "AI/images/image-2.png"
+  ],
+  "excluded_dirs": [
+    "AI/"
+  ],
+  "excluded_note": "AI/ 为未收编原始笔记素材，不计入知识点统计。",
+  "quality_issue_count": 0,
+  "files": [
+    {
+      "path": "00_v11_审查修订说明.md",
+      "size": 9173,
+      "sha256": "7dfb06230a8253a5"
+    },
+    {
+      "path": "00_后端服务运行时关系图.md",
+      "size": 1032,
+      "sha256": "de03c0f59f5e01d8"
+    },
+    {
+      "path": "00_总体知识网络图.md",
+      "size": 1718,
+      "sha256": "37e7073deb397b35"
+    },
+    {
+      "path": "00_总体索引.md",
+      "size": 16350,
+      "sha256": "baf910c125a8cc35"
+    },
+    {
+      "path": "00_理解推进轨迹.md",
+      "size": 10326,
+      "sha256": "fe102902b8739d51"
+    },
+    {
+      "path": "00_覆盖清单.md",
+      "size": 6254,
+      "sha256": "d6fa7f3551fa2443"
+    },
+    {
+      "path": "00_质量检查报告.md",
+      "size": 1255,
+      "sha256": "891b7c9a8208b729"
+    },
+    {
+      "path": "01_LLM_Transformer/001_Transformer_的作用：从_token_序列到上下文向量.md",
+      "size": 3738,
+      "sha256": "751e98a7c4fdb23a"
+    },
+    {
+      "path": "01_LLM_Transformer/002_Token、Embedding、Seq_Len_与_Hidden_Size.md",
+      "size": 2818,
+      "sha256": "386bdde4b783307e"
+    },
+    {
+      "path": "01_LLM_Transformer/003_Q_K_V_注意力机制.md",
+      "size": 2853,
+      "sha256": "076ebb8b265c8615"
+    },
+    {
+      "path": "01_LLM_Transformer/004_Multi-Head_Attention_与表达能力.md",
+      "size": 2725,
+      "sha256": "f776c49ad5d53dcd"
+    },
+    {
+      "path": "01_LLM_Transformer/005_FFN_前馈神经网络.md",
+      "size": 2440,
+      "sha256": "4cbecb148eae16a9"
+    },
+    {
+      "path": "01_LLM_Transformer/006_Encoder、Decoder、Decoder-only_与_Cross_Attention.md",
+      "size": 2895,
+      "sha256": "49ecd29968e6c891"
+    },
+    {
+      "path": "01_LLM_Transformer/007_Causal_Mask、自回归生成与_KV_Cache.md",
+      "size": 2479,
+      "sha256": "7027246ea8c0fafd"
+    },
+    {
+      "path": "01_LLM_Transformer/008_预训练、SFT、RLHF_与_LoRA.md",
+      "size": 3037,
+      "sha256": "f224271c55a786c4"
+    },
+    {
+      "path": "01_LLM_Transformer/009_Prompt、XML_JSON_与工具调用格式.md",
+      "size": 2588,
+      "sha256": "78b7699117465c94"
+    },
+    {
+      "path": "01_LLM_Transformer/010_Bi-encoder、Cross_Encoder_与重排.md",
+      "size": 2284,
+      "sha256": "276ef6530fcd4541"
+    },
+    {
+      "path": "01_LLM_Transformer/011_知识图谱、HyDE、RRF_与检索增强.md",
+      "size": 5806,
+      "sha256": "4591003e6eb9aa76"
+    },
+    {
+      "path": "01_LLM_Transformer/012_稠密向量、稀疏向量与多向量表示及检索.md",
+      "size": 10304,
+      "sha256": "1581b784c866a307"
+    },
+    {
+      "path": "01_LLM_Transformer/013_倒排索引与稀疏检索.md",
+      "size": 8469,
+      "sha256": "d7313cd5d374b371"
+    },
+    {
+      "path": "01_LLM_Transformer/README.md",
+      "size": 1468,
+      "sha256": "c2f59ff6d2b126e2"
+    },
+    {
+      "path": "01_LLM_Transformer/附_通用学习与排查模板.md",
+      "size": 3647,
+      "sha256": "64e36d168a403983"
+    },
+    {
+      "path": "02_Agent_RAG_Memory/014_Agent_的端到端任务能力.md",
+      "size": 2448,
+      "sha256": "cdd859fce7bbb9b4"
+    },
+    {
+      "path": "02_Agent_RAG_Memory/015_MRKL、ReAct、ToT_与_Plan-and-Execute.md",
+      "size": 7981,
+      "sha256": "516f6f663aedb04d"
+    },
+    {
+      "path": "02_Agent_RAG_Memory/016_Reflection、Insight_与执行后反思.md",
+      "size": 5966,
+      "sha256": "80efe2a45452ff76"
+    },
+    {
+      "path": "02_Agent_RAG_Memory/017_ReAct_提前终止检测.md",
+      "size": 2702,
+      "sha256": "d7055bce91cb88b1"
+    },
+    {
+      "path": "02_Agent_RAG_Memory/018_重复检测、语义缓存与_Best-of-n_采样.md",
+      "size": 2638,
+      "sha256": "baed735f905295ba"
+    },
+    {
+      "path": "02_Agent_RAG_Memory/019_IterResearch、Research_Synthesis_与常量大小上下文.md",
+      "size": 6552,
+      "sha256": "740d9b0bb1a352c7"
+    },
+    {
+      "path": "02_Agent_RAG_Memory/020_Agent_Memory_四类：短期、情景、语义、程序性.md",
+      "size": 2477,
+      "sha256": "5c19d3c13adaa849"
+    },
+    {
+      "path": "02_Agent_RAG_Memory/021_Generative_Agents_的记忆与反思机制.md",
+      "size": 8570,
+      "sha256": "57ba087db0782c0e"
+    },
+    {
+      "path": "02_Agent_RAG_Memory/022_MemGPT：上下文窗口作为有限内存.md",
+      "size": 2907,
+      "sha256": "160a1ea296fe7fdc"
+    },
+    {
+      "path": "02_Agent_RAG_Memory/023_Mem0_与_A-Mem：生产级长期记忆管理.md",
+      "size": 3565,
+      "sha256": "3558068cf0a595ce"
+    },
+    {
+      "path": "02_Agent_RAG_Memory/024_RAG_完整链路：召回、融合、重排、生成.md",
+      "size": 8292,
+      "sha256": "f9eae7f88775c857"
+    },
+    {
+      "path": "02_Agent_RAG_Memory/025_LangGraph_状态更新、invoke_与_stream.md",
+      "size": 3240,
+      "sha256": "7bfb6b24cc43ba78"
+    },
+    {
+      "path": "02_Agent_RAG_Memory/026_LangChain_@tool_与_bind_tools.md",
+      "size": 2711,
+      "sha256": "db9ed45cd5d44e54"
+    },
+    {
+      "path": "02_Agent_RAG_Memory/027_RAG_Query_Rewrite_查询改写.md",
+      "size": 8427,
+      "sha256": "e5285cb6151fb7b7"
+    },
+    {
+      "path": "02_Agent_RAG_Memory/028_RAG_HyDE_假设文档嵌入.md",
+      "size": 8827,
+      "sha256": "44f49f017429fea2"
+    },
+    {
+      "path": "02_Agent_RAG_Memory/029_RAG_Multi-Query_Expansion_多查询扩展.md",
+      "size": 8179,
+      "sha256": "73f4deeaa7de29c3"
+    },
+    {
+      "path": "02_Agent_RAG_Memory/030_Query_Rewrite、HyDE_与_Multi-Query_对比.md",
+      "size": 8042,
+      "sha256": "cd2780a3ccd77443"
+    },
+    {
+      "path": "02_Agent_RAG_Memory/031_RAGAS_评估指标与_Ground_Truth_来源.md",
+      "size": 9405,
+      "sha256": "b6d2c294e4ef39aa"
+    },
+    {
+      "path": "02_Agent_RAG_Memory/032_Extended_Thinking_与_ReAct_推理范式对比.md",
+      "size": 8350,
+      "sha256": "ff70e9e8ca0a409f"
+    },
+    {
+      "path": "02_Agent_RAG_Memory/README.md",
+      "size": 2113,
+      "sha256": "ab2c005f828d6c24"
+    },
+    {
+      "path": "02_Agent_RAG_Memory/附_通用学习与排查模板.md",
+      "size": 3814,
+      "sha256": "aa7d04013bfb403f"
+    },
+    {
+      "path": "03_Python/033_async___await_与协程调度.md",
+      "size": 2257,
+      "sha256": "7a278d4404a781b9"
+    },
+    {
+      "path": "03_Python/034_@asynccontextmanager_与_yield_生命周期.md",
+      "size": 2282,
+      "sha256": "ef26ccbd2b3db38b"
+    },
+    {
+      "path": "03_Python/035_asyncio.wait、done_pending_与_FIRST_COMPLETED.md",
+      "size": 2207,
+      "sha256": "897c528d6eb9a515"
+    },
+    {
+      "path": "03_Python/036_FastAPI_UploadFile：流式读取_vs_bytes.md",
+      "size": 2362,
+      "sha256": "7d4a482f2675ab6c"
+    },
+    {
+      "path": "03_Python/037_可变默认参数与_default_factory.md",
+      "size": 2374,
+      "sha256": "7d1b2eb40c56ed35"
+    },
+    {
+      "path": "03_Python/038_JSON、XML_与正则提取.md",
+      "size": 1933,
+      "sha256": "bb947609558b643f"
+    },
+    {
+      "path": "03_Python/039_pandas_与实验_日志数据处理.md",
+      "size": 1806,
+      "sha256": "72002904bb8ead71"
+    },
+    {
+      "path": "03_Python/040_Conda、pip、Python_路径与依赖隔离.md",
+      "size": 1913,
+      "sha256": "0273a37bd90fc694"
+    },
+    {
+      "path": "03_Python/README.md",
+      "size": 1008,
+      "sha256": "c26ce8046dcaa999"
+    },
+    {
+      "path": "03_Python/附_通用学习与排查模板.md",
+      "size": 3557,
+      "sha256": "c87f14c8068f803c"
+    },
+    {
+      "path": "04_Go/041_Go_后端开发技术栈总览.md",
+      "size": 2713,
+      "sha256": "9c15a13b4afb9950"
+    },
+    {
+      "path": "04_Go/042_Gin_Handler_闭包与依赖注入.md",
+      "size": 2235,
+      "sha256": "af2f7a86d495b95d"
+    },
+    {
+      "path": "04_Go/043_Gin_BasicAuth、Middleware_与_Session_Cookie.md",
+      "size": 2190,
+      "sha256": "1440c9d76c81abfc"
+    },
+    {
+      "path": "04_Go/044_Go_Context：取消、超时与值传递.md",
+      "size": 2179,
+      "sha256": "e9df10eb21601d07"
+    },
+    {
+      "path": "04_Go/045_Go_GC：三色标记与混合写屏障.md",
+      "size": 2591,
+      "sha256": "8c324c016367a18b"
+    },
+    {
+      "path": "04_Go/046_逃逸分析、闭包与内存泄露.md",
+      "size": 2002,
+      "sha256": "705b178286f19f22"
+    },
+    {
+      "path": "04_Go/047_Go_内存三级缓存：mcache、mcentral、mheap、span.md",
+      "size": 2090,
+      "sha256": "44040a13010ff2d6"
+    },
+    {
+      "path": "04_Go/048_GoFrame_g.Meta_与声明式路由绑定.md",
+      "size": 1817,
+      "sha256": "ed5da610df217a08"
+    },
+    {
+      "path": "04_Go/049_Go_SSE：text_event-stream_与流式响应.md",
+      "size": 2066,
+      "sha256": "4145195e20a91df6"
+    },
+    {
+      "path": "04_Go/050_Eino：组件化_RAG___Agent_编排.md",
+      "size": 2291,
+      "sha256": "5a73d2cf43b1b896"
+    },
+    {
+      "path": "04_Go/051_Go_error、panic_与_recover.md",
+      "size": 1934,
+      "sha256": "249fac6dccffa2c5"
+    },
+    {
+      "path": "04_Go/052_Goroutine_数量、调度与性能边界.md",
+      "size": 8133,
+      "sha256": "8491307e21e8dff9"
+    },
+    {
+      "path": "04_Go/053_Channel_关闭、只读通道与_select_读就绪.md",
+      "size": 9091,
+      "sha256": "39a874f0300a5513"
+    },
+    {
+      "path": "04_Go/054_sync.Mutex_Lock、TryLock_与锁模型.md",
+      "size": 9096,
+      "sha256": "646b723e691c250f"
+    },
+    {
+      "path": "04_Go/055_Go_异步机制：goroutine、channel、select_与_Context.md",
+      "size": 8507,
+      "sha256": "85e6687670b9850a"
+    },
+    {
+      "path": "04_Go/056_Go_Module、package_与_import_路径.md",
+      "size": 5727,
+      "sha256": "762dfc794b98d24c"
+    },
+    {
+      "path": "04_Go/057_Protobuf_go_package、生成路径与_proto_文件组织.md",
+      "size": 12799,
+      "sha256": "38d133747967d795"
+    },
+    {
+      "path": "04_Go/058_Go_接口实现、方法集与指针接收器.md",
+      "size": 5992,
+      "sha256": "9c73508d195abc9e"
+    },
+    {
+      "path": "04_Go/059_gRPC_RegisterServer、UnimplementedServer_与接口实现.md",
+      "size": 6626,
+      "sha256": "ca455d5c5d229605"
+    },
+    {
+      "path": "04_Go/README.md",
+      "size": 2159,
+      "sha256": "8cdd6d1d6c431889"
+    },
+    {
+      "path": "04_Go/附_通用学习与排查模板.md",
+      "size": 4082,
+      "sha256": "ff4f1440c277438a"
+    },
+    {
+      "path": "05_Database_Redis/060_数据库选型：SQL、MongoDB、Redis、向量库的分工.md",
+      "size": 2048,
+      "sha256": "c78385ea69c4da2e"
+    },
+    {
+      "path": "05_Database_Redis/061_SQLite：轻量级本地关系数据库.md",
+      "size": 1788,
+      "sha256": "6988ffc632e535ae"
+    },
+    {
+      "path": "05_Database_Redis/062_B+树索引、复合索引与最左前缀.md",
+      "size": 2019,
+      "sha256": "79d689cc3ae67420"
+    },
+    {
+      "path": "05_Database_Redis/063_MySQL___PostgreSQL：事务型关系数据库.md",
+      "size": 2210,
+      "sha256": "e86b866d4ae32036"
+    },
+    {
+      "path": "05_Database_Redis/064_MongoDB：文档型数据库与灵活_Schema.md",
+      "size": 1965,
+      "sha256": "180a854b95022bd2"
+    },
+    {
+      "path": "05_Database_Redis/065_Redis_基本数据类型与时间存储.md",
+      "size": 1892,
+      "sha256": "fdac4acf2489c37d"
+    },
+    {
+      "path": "05_Database_Redis/066_Redis_特殊类型：HyperLogLog、Bitmap、Geo、Stream.md",
+      "size": 2030,
+      "sha256": "339b4a19f3641547"
+    },
+    {
+      "path": "05_Database_Redis/067_Redis_会话状态、临时映射与资源池.md",
+      "size": 1934,
+      "sha256": "7aaa376146fb0b77"
+    },
+    {
+      "path": "05_Database_Redis/068_Redis_限流与_Lua_原子操作.md",
+      "size": 1920,
+      "sha256": "b94fc6d8a5217f50"
+    },
+    {
+      "path": "05_Database_Redis/069_Redis_复制：PSYNC、FULLRESYNC、RDB_与_backlog.md",
+      "size": 1909,
+      "sha256": "457938394ee4f1be"
+    },
+    {
+      "path": "05_Database_Redis/070_Redis_IO_Threads_与事件循环.md",
+      "size": 2189,
+      "sha256": "cc3f5d48bbc33aee"
+    },
+    {
+      "path": "05_Database_Redis/071_Redis_Cluster：槽、CLUSTER_SLOTS、PFAIL_FAIL_与故障转移.md",
+      "size": 2504,
+      "sha256": "982cd162a51e2257"
+    },
+    {
+      "path": "05_Database_Redis/072_Redis_Sentinel_与_Cluster_的区别.md",
+      "size": 1804,
+      "sha256": "f75f4e1a3e3a8180"
+    },
+    {
+      "path": "05_Database_Redis/073_Redis_过期删除：惰性删除、定期删除与内存淘汰.md",
+      "size": 6198,
+      "sha256": "8134c331d0198e14"
+    },
+    {
+      "path": "05_Database_Redis/README.md",
+      "size": 1788,
+      "sha256": "ceecea4fe212b9b1"
+    },
+    {
+      "path": "05_Database_Redis/附_通用学习与排查模板.md",
+      "size": 4065,
+      "sha256": "1a97645f00a94da8"
+    },
+    {
+      "path": "06_MessageQueue/074_消息队列的核心概念：生产者、队列、消费者、消息分发.md",
+      "size": 2054,
+      "sha256": "5b38adeee0fdbc27"
+    },
+    {
+      "path": "06_MessageQueue/075_流量削峰、异步解耦与最终一致性.md",
+      "size": 1955,
+      "sha256": "fdb7e95ce074a88e"
+    },
+    {
+      "path": "06_MessageQueue/076_Kafka：KRaft、Broker、Topic、Partition、Replica.md",
+      "size": 9684,
+      "sha256": "18fae8bc802e3fef"
+    },
+    {
+      "path": "06_MessageQueue/077_Kafka_Consumer_Group_与_Offset.md",
+      "size": 8020,
+      "sha256": "198a65df9011341f"
+    },
+    {
+      "path": "06_MessageQueue/078_Kafka_Leader_Follower_ISR_与故障选举.md",
+      "size": 6682,
+      "sha256": "b893cade9c96fe9f"
+    },
+    {
+      "path": "06_MessageQueue/079_Kafka_重试机制、Retry_Topic_与死信队列.md",
+      "size": 7066,
+      "sha256": "32aad6963e04365d"
+    },
+    {
+      "path": "06_MessageQueue/080_Kafka_Key、分区策略与热分区.md",
+      "size": 6002,
+      "sha256": "bb879182ee145b27"
+    },
+    {
+      "path": "06_MessageQueue/081_Kafka_消息分发、多消费者语义与幂等处理.md",
+      "size": 6122,
+      "sha256": "5e6734f67f6f3eba"
+    },
+    {
+      "path": "06_MessageQueue/082_RabbitMQ：vhost、exchange、queue、binding.md",
+      "size": 5579,
+      "sha256": "f75710ecce60b441"
+    },
+    {
+      "path": "06_MessageQueue/083_Routing_Key_与_Binding_Key.md",
+      "size": 5227,
+      "sha256": "fc3e154f52891e99"
+    },
+    {
+      "path": "06_MessageQueue/084_Kafka_vs_RabbitMQ：事件流与业务路由.md",
+      "size": 2663,
+      "sha256": "5eb002255a2dfac8"
+    },
+    {
+      "path": "06_MessageQueue/085_RabbitMQ_延时队列：TTL、死信交换机与延时插件.md",
+      "size": 11935,
+      "sha256": "0e10fc7117981fdb"
+    },
+    {
+      "path": "06_MessageQueue/086_RabbitMQ_惰性队列：磁盘优先与消费定位.md",
+      "size": 6621,
+      "sha256": "c61544a3f3d1785e"
+    },
+    {
+      "path": "06_MessageQueue/087_RabbitMQ_Federation：联邦交换机与联邦队列.md",
+      "size": 5954,
+      "sha256": "a5b415a6da83b491"
+    },
+    {
+      "path": "06_MessageQueue/README.md",
+      "size": 1804,
+      "sha256": "0abef23b72c96632"
+    },
+    {
+      "path": "06_MessageQueue/附_通用学习与排查模板.md",
+      "size": 4000,
+      "sha256": "b7fd5df71b1752b7"
+    },
+    {
+      "path": "07_Backend_Deploy_Network/088_RESTful_API、持久化服务与微服务.md",
+      "size": 2268,
+      "sha256": "698f0796e0f8e777"
+    },
+    {
+      "path": "07_Backend_Deploy_Network/089_RPC_与_gRPC：服务间调用.md",
+      "size": 10269,
+      "sha256": "81b7271c46328a68"
+    },
+    {
+      "path": "07_Backend_Deploy_Network/090_正向代理与反向代理.md",
+      "size": 2063,
+      "sha256": "e5e55da268845680"
+    },
+    {
+      "path": "07_Backend_Deploy_Network/091_Docker、Docker_Compose_与_Windows_常见问题.md",
+      "size": 1949,
+      "sha256": "0b53ea5ce962129a"
+    },
+    {
+      "path": "07_Backend_Deploy_Network/092_Kubernetes、服务发现与弹性部署.md",
+      "size": 4303,
+      "sha256": "4fa42e577ff335d0"
+    },
+    {
+      "path": "07_Backend_Deploy_Network/093_Prometheus、Grafana、OpenTelemetry_与日志.md",
+      "size": 2135,
+      "sha256": "729434280013ad2b"
+    },
+    {
+      "path": "07_Backend_Deploy_Network/094_HTTP_Streaming、SSE、WebSocket_与_gRPC_Streaming.md",
+      "size": 2644,
+      "sha256": "194506623151d4de"
+    },
+    {
+      "path": "07_Backend_Deploy_Network/095_沙箱、权限与工具执行安全.md",
+      "size": 2313,
+      "sha256": "0b0ce945f5430ea6"
+    },
+    {
+      "path": "07_Backend_Deploy_Network/096_RPC_动态代理与字节码生成.md",
+      "size": 10000,
+      "sha256": "a118b7b8a52a293a"
+    },
+    {
+      "path": "07_Backend_Deploy_Network/097_RPC_心跳、服务注册与可用性检测.md",
+      "size": 9208,
+      "sha256": "bab1eaa6fd873edb"
+    },
+    {
+      "path": "07_Backend_Deploy_Network/README.md",
+      "size": 1234,
+      "sha256": "a7164d9ecc5b13c7"
+    },
+    {
+      "path": "07_Backend_Deploy_Network/附_通用学习与排查模板.md",
+      "size": 3834,
+      "sha256": "38ef2bf57b85bcbd"
+    },
+    {
+      "path": "README.md",
+      "size": 1260,
+      "sha256": "a18825e5d1d5742c"
+    }
+  ]
+}
