@@ -6,58 +6,23 @@
 
 ## 1. 总体性概念
 
-@asynccontextmanager 用异步生成器定义上下文管理器；yield 前初始化，yield 后清理。
-
+`@asynccontextmanager` 用异步生成器定义上下文管理器：`yield` 前初始化，`yield` 的值交给 `as` 变量，退出上下文时执行 `yield` 后的清理。
 
 ## 2. 原理性解释
 
-- 函数内部必须包含 yield。
-- 进入 async with 执行 yield 前代码。
-- yield 的值交给 as 变量。
-- 退出 async with 执行 finally 清理。
+- 函数内部必须包含一次生命周期分界用的 `yield`；
+- 进入 `async with` 时执行到 `yield`；
+- 正常退出或业务代码抛错时，生成器都会继续到 `finally`；
+- 普通异步生成器由 `async for` / `anext()` 请求下一个值，而上下文管理器由进入/退出协议推进；
+- 执行到 `yield` 时，后面的 checkpoint、日志或清理尚未执行。
 
 ### `@asynccontextmanager` 把“进入/退出资源生命周期”写成一个 async generator
 
-`yield` 前面的代码对应 `__aenter__`，`yield` 后面的 `finally` 对应 `__aexit__`。你之前说“yield 返回生成器只有被消费时才执行具体逻辑”，在 contextmanager 场景下可以理解为：只有进入 `async with` 时，yield 前的初始化逻辑才执行；离开 `async with` 时，yield 后的清理逻辑才执行。
+`yield` 前面的代码对应 `__aenter__`，`yield` 后面的清理对应 `__aexit__`。业务代码在上下文中抛出的异常会在 `yield` 位置重新注入生成器，因此清理逻辑应放进 `finally`。
 
 ```python
-@asynccontextmanager
-async def lifespan(app):
-    app.state.db = await connect_db()
-    try:
-        yield
-    finally:
-        await app.state.db.close()
-```
+from contextlib import asynccontextmanager
 
-## 3. 机制流程
-
-1. 调用上下文函数。
-2. 进入 `__aenter__`。
-3. 初始化资源。
-4. 业务使用资源。
-5. 退出时清理。
-
-### 生命周期流程
-
-```text
-async with manager():
-  ↓ 调用 manager，执行 yield 前逻辑
-获得资源
-  ↓ 执行业务代码
-正常结束或异常
-  ↓ 执行 yield 后 / finally 清理逻辑
-```
-
-在 FastAPI 中常用于应用启动/关闭资源管理，例如数据库连接池、模型加载、HTTP client、消息队列连接。不要把清理逻辑写在普通 return 后面，因为异常时可能无法执行。
-
-## 4. 类比理解
-
-像借会议室：开门开灯、交给你用、最后关灯锁门。
-
-## 5. 应用举例 / 代码或伪代码
-
-```python
 @asynccontextmanager
 async def db_conn():
     conn = await open_db()
@@ -65,12 +30,52 @@ async def db_conn():
         yield conn
     finally:
         await conn.close()
+```
 
-async with db_conn() as db:
-    await db.query("select 1")
+普通异步生成器也在 `yield` 处暂停：若代码先 `yield` 一个“阶段完成”事件，再保存 checkpoint，事件交给上层时 checkpoint 尚未执行。只有上层继续消费，生成器才从 `yield` 后推进。严格协议应先保存再发 `checkpoint_saved`，或准确命名为 `stage_output_ready`。
+
+## 3. 机制流程
+
+1. 调用上下文函数，创建异步生成器；
+2. 进入 `async with`，执行初始化；
+3. 推进到 `yield`，把资源交给业务代码；
+4. 业务代码正常结束或抛出异常；
+5. 退出协议继续推进生成器；
+6. `finally` 释放资源。
+
+### 生命周期流程
+
+```text
+async with manager():
+  ↓ 执行 yield 前逻辑
+获得资源并执行业务
+  ↓ 正常结束或异常
+执行 yield 后 / finally 清理
+```
+
+FastAPI 中常用于应用启动/关闭阶段的数据库连接池、模型、HTTP client 和消息系统连接。不要把清理只写在普通 `return` 后面，否则异常路径可能跳过。
+
+## 4. 类比理解
+
+像借会议室：进入时开门开灯，把房间交给你；离开时无论会议是否正常结束，都关灯锁门。
+
+## 5. 应用举例 / 代码或伪代码
+
+```python
+from contextlib import asynccontextmanager
+from fastapi import FastAPI
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    app.state.client = await create_http_client()
+    try:
+        yield
+    finally:
+        await app.state.client.aclose()
+
+app = FastAPI(lifespan=lifespan)
 ```
 
 ## 6. 你在讨论中的理解推进
 
-你说 yield 只有被消费才执行逻辑；这里对应 async with 进入/退出生命周期。
-
+你从“yield 只有被消费才执行后续逻辑”推进到两种协议的区别：普通异步生成器由上层逐次取值驱动，`@asynccontextmanager` 则由 `async with` 的进入和退出驱动初始化与清理。

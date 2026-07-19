@@ -1,11 +1,16 @@
 # Agent / RAG / Memory
 
-Agent 行动、反思、记忆、RAG 检索增强与评估。
+Agent 行动、工具接入、框架编排、反思、记忆、RAG 检索增强与评估，并收录相关的 Prompt 工程和机器学习基础。
 
-知识点文件数：19
+知识点文件数：24
 
 ## 文件列表
 
+- [Prompt 工程：User Prompt 与 System Prompt](001_Prompt_工程：User_Prompt_与_System_Prompt.md)
+- [Agent 开发框架与选型](002_Agent_开发框架与选型.md)
+- [Function Calling 与 MCP：模型决策和工具接入](003_Function_Calling_与_MCP_工具接入.md)
+- [Agent Skills：模块化能力扩展](004_Agent_Skills_模块化能力扩展.md)
+- [深度学习基础：回归、梯度下降与评估指标](005_深度学习基础：回归、梯度下降与评估指标.md)
 - [Agent 的端到端任务能力](014_Agent_的端到端任务能力.md)
 - [MRKL、ReAct、ToT 与 Plan-and-Execute](015_MRKL、ReAct、ToT_与_Plan-and-Execute.md)
 - [Reflection、Insight 与执行后反思](016_Reflection、Insight_与执行后反思.md)
@@ -27,3 +32,5 @@ Agent 行动、反思、记忆、RAG 检索增强与评估。
 - [Extended Thinking 与 ReAct 推理范式对比](032_Extended_Thinking_与_ReAct_推理范式对比.md)
 
 另有：[附_通用学习与排查模板](附_通用学习与排查模板.md)——v11 从本目录各文件抽取的共用模板段，正文中不再重复。
+
+文档图片统一存放在 `assets/` 下，并按主题分目录管理。

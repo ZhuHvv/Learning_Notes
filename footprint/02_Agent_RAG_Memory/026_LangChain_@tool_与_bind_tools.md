@@ -8,6 +8,8 @@
 
 @tool 把普通函数声明为工具；函数签名和 docstring 会变成 schema；bind_tools 把 schema 发给模型，让模型能选择工具并生成参数。
 
+本文件只说明 LangChain 的具体封装；通用 Function Calling 闭环以及它与 MCP 的层级关系见 `003_Function_Calling_与_MCP_工具接入.md`。
+
 
 ## 2. 原理性解释
 
@@ -73,4 +75,3 @@ llm_with_tools = llm.bind_tools([calculate])
 ## 6. 你在讨论中的理解推进
 
 你已理解 @tool 声明工具、bind_tools 转 schema；追问 docstring 后理解框架读取 `__doc__`。
-

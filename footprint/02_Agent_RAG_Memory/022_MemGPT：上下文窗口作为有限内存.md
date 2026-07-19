@@ -1,71 +1,106 @@
 # MemGPT：上下文窗口作为有限内存
 
 > 所属分类：Agent / RAG / Memory  
-> 修订版本：v11  
-> 质量要求：本文件只解释本知识点，不复用其他知识点的原理段；示例尽量给出代码、伪代码、命令或配置。
+> 核心问题：上下文窗口为什么是工作内存，MemGPT 又怎样把有限窗口扩展为可调度的记忆系统？
 
-## 1. 总体性概念
+## 1. Context Window
 
-MemGPT 把上下文窗口视为有限内存，借鉴操作系统内存管理，把信息分为两层：**main context**（system instructions + working context + FIFO queue，模型可直接看到）与 **external context**（recall storage + archival storage，需通过工具检索），并通过工具主动换入/换出。
+上下文窗口是模型在一次推理中能够直接参考的 token 容量。Token 不等于字符或单词，不同 tokenizer 对同一文本的计数可能不同。
 
-> 注：MemGPT 开源项目已于 2024-09 更名为 Letta；MemGPT 保留为论文/架构名。
+需要区分：
 
+- **Context window**：一次调用的输入与输出总边界；
+- **输入预算**：system、history、memory、retrieval、tool schema 和用户输入所占 token；
+- **输出上限**：API 允许模型最多生成多少 token；
+- **实际输出**：模型可能提前遇到结束条件。
 
-## 2. 原理性解释
+完整预算近似为：
 
-- 主上下文类似 RAM，模型可直接看到。
-- Recall storage 保存对话历史。
-- Archival storage 保存长期知识和可检索档案。
-- 模型可通过函数调用主动读写记忆。
-- Heartbeat 可触发模型检查是否需要管理记忆。
+```text
+system + user + history + memory + retrieved context
+  + tool/schema 开销 + 预留输出 ≤ model context window
+```
 
-### MemGPT 把上下文窗口当作“有限内存”来调度
+仅设置输出上限不能防止输入超窗。窗口也不是越大越好：无关、重复和冲突信息会增加成本、延迟和注意力干扰。
 
-MemGPT 的关键想法是：LLM 的上下文窗口类似操作系统里的主存，容量有限但访问快；外部存储类似磁盘，容量大但需要主动检索。系统通过函数调用让模型决定何时把信息写入长期存储、何时从外部记忆取回信息、何时压缩当前上下文。
+上下文窗口常被称为模型能“记住”的文本量，但它不是持久记忆。未放进当前请求的内容无法直接读取；历史被裁剪或未持久化后也不会自动保留。
 
-你之前对 FIFO 队列、Recall Storage、Archival Storage 的理解可以再修正为：不是简单把旧对话弹出保存，而是用显式内存管理策略区分“近期对话上下文”“可搜索历史记录”“更长期的档案知识”。
+## 2. MemGPT 的总体概念
 
-## 3. 机制流程
+MemGPT 把上下文窗口视为有限内存，借鉴操作系统内存管理，将信息分为：
 
-1. 新消息进入上下文。
-2. 上下文接近上限时摘要/换出。
-3. 需要信息时检索外部记忆。
-4. 检索结果换入上下文。
-5. 继续回答。
+- **Main Context**：system instructions、working context 和近期消息，模型可直接看到；
+- **External Context**：Recall Storage 与 Archival Storage，需要通过工具检索。
+
+> 项目命名说明：MemGPT 开源项目已于 2024-09 更名为 Letta；MemGPT 仍用于指论文和这套架构思想。
+
+## 3. 内存分层
+
+- **近期工作上下文**：当前目标、指令、证据和近期对话；
+- **Recall Storage**：可搜索的历史交互；
+- **Archival Storage**：长期知识和档案；
+- **Memory Tools**：显式读写、检索、摘要和归档；
+- **Heartbeat**：系统提供的内部维护机会。
+
+因此它不只是“FIFO 把旧对话弹出保存”。FIFO 只决定近期消息怎样淘汰，MemGPT 的核心是按用途和检索方式决定常驻、换出和取回。
+
+长期记忆常采用“原文保留在外部存储，摘要/洞察作为可检索索引”。摘要不是无损压缩，可能丢失限定词、例外和证据，也可能引入错误。可靠记忆应保留原文定位、摘要版本、生成时间、来源范围和适用时间；摘要用于导航，原文用于核验。
+
+压缩可按 token 阈值、会话结束、主题切换或显式操作触发。仅定义判断函数不表示触发器已接入工作流。
+
+## 4. 调度流程
+
+上下文治理通常先按任务结构选择信息，再做 token 预算，最后用硬截断兜底：
+
+| 层面 | 常见手段 | 主要代价 |
+| --- | --- | --- |
+| 选择 | Top-N、阈值、去重、MMR | 可能丢失候选 |
+| 预算 | 目标 tokenizer 计算完整 Prompt | 多模型适配复杂 |
+| 压缩 | 摘要、结构化抽取 | 细节损失和偏差 |
+| 架构 | 分阶段、map-reduce、层级 memory | 状态更复杂 |
+| 存储 | 原文外置、按需检索 | 依赖召回质量 |
+
+对话历史常按最近优先逆序扫描，遇到一条放不下就 `break`，保留连续近期窗口；RAG 候选按相关性排序，某篇过长时可 `continue`，让后面的短文档使用剩余预算。Top-N 不限制长度，字符切片也不等于 token 控制。
 
 ### MemGPT 风格内存调度流程
 
 ```python
 while chatting:
-    if context_window_near_limit():
-        summary = summarize_old_messages()
+    event = receive_event()
+    working_context.add(event)
+
+    if near_context_limit(working_context):
+        old_messages = select_evictable_messages(working_context)
+        summary = summarize_with_source_links(old_messages)
         recall_storage.write(old_messages, summary)
-        trim_context()
-    if user_query_requires_old_info():
-        hits = recall_storage.search(user_query)
-        insert_into_context(hits)
-    response = llm(current_context)
+        working_context.evict(old_messages)
+        working_context.add(summary)
+
+    if need_historical_information(working_context):
+        hits = search_recall_and_archival(working_context.current_query)
+        working_context.add(pack_relevant_hits(hits))
+
+    response = llm(working_context)
 ```
 
-心跳机制可以理解为系统给 Agent 的一次“内部维护机会”：即使没有用户新输入，也能检查是否需要归档、检索、反思或更新状态。
+实现还要处理来源、时间、版本、权限、新旧记忆冲突和检索结果 token 预算。
 
-## 4. 类比理解
+## 5. 类比理解
 
-像操作系统：上下文是内存，外部记忆是硬盘，模型决定页面换入换出。
+上下文窗口像 RAM：容量有限、读取直接；外部记忆像磁盘：容量更大，但需要检索换入。`break` 的近期对话选择像保留连续的最近几页，`continue` 的 RAG 选择像跳过装不下的大册子，继续放入短而相关的资料。
 
-## 5. 应用举例 / 代码或伪代码
+## 6. 常见误区与关联知识点
 
-```python
-if context_tokens(messages) > LIMIT:
-    summary = summarize(messages[:-10])
-    archival_store.add(summary)
-    messages = messages[-10:] + [summary]
+- 长上下文不表示所有信息都被同等有效利用；
+- 配置文件里写了 token 值，不表示调用链已经实际使用，应沿参数传递验证；
+- 列表前 N 条不一定最重要，并发追加顺序也不等于相关性排序；
+- 摘要不能替代原文和证据引用；
+- 检索到的历史可能过时或越权；
+- 记忆写入应依据用途、重要性、隐私和保留策略筛选。
 
-if need_memory(query):
-    messages += archival_store.search(query, top_k=5)
-```
+关联阅读：
 
-## 6. 你在讨论中的理解推进
-
-你用 FIFO 理解 MemGPT 接近但不完整；更准确是 LLM 主动参与内存管理。
-
+- `019_IterResearch、Research_Synthesis_与常量大小上下文.md`
+- `020_Agent_Memory_四类：短期、情景、语义、程序性.md`
+- `023_Mem0_与_A-Mem：生产级长期记忆管理.md`
+- `024_RAG_完整链路：召回、融合、重排、生成.md`
