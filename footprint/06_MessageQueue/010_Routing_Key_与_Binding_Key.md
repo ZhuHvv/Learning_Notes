@@ -163,9 +163,9 @@ binding key   = ?
 
 ## 8. 关联知识点
 
-- `082_RabbitMQ：vhost、exchange、queue、binding.md`
-- `085_RabbitMQ_延时队列：TTL、死信交换机与延时插件.md`
-- `087_RabbitMQ_Federation：联邦交换机与联邦队列.md`
+- `009_RabbitMQ：vhost、exchange、queue、binding.md`
+- `012_RabbitMQ_延时队列：TTL、死信交换机与延时插件.md`
+- `014_RabbitMQ_Federation：联邦交换机与联邦队列.md`
 
 ## 9. 复习检查问题
 

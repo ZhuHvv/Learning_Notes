@@ -229,9 +229,9 @@ def diagnose(sample):
 
 ## 8. 关联知识点
 
-- `024_RAG_完整链路：召回、融合、重排、生成.md`
+- `016_RAG_完整链路：召回、融合、重排、生成.md`
 - `012_稠密向量、稀疏向量与多向量表示及检索.md`
-- `030_Query_Rewrite、HyDE_与_Multi-Query_对比.md`
+- `022_Query_Rewrite、HyDE_与_Multi-Query_对比.md`
 - `010_Bi-encoder、Cross_Encoder_与重排.md`
 
 ## 9. 复习检查问题

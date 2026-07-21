@@ -210,10 +210,10 @@ kafka-topics --bootstrap-server localhost:9092 \
 
 ## 8. 关联知识点
 
-- `077_Kafka_Consumer_Group_与_Offset.md`
-- `078_Kafka_Leader_Follower_ISR_与故障选举.md`
-- `080_Kafka_Key、分区策略与热分区.md`
-- `084_Kafka_vs_RabbitMQ：事件流与业务路由.md`
+- `004_Kafka_Consumer_Group_与_Offset.md`
+- `005_Kafka_Leader_Follower_ISR_与故障选举.md`
+- `007_Kafka_Key、分区策略与热分区.md`
+- `011_Kafka_vs_RabbitMQ：事件流与业务路由.md`
 
 ## 9. 复习检查问题
 

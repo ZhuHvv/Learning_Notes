@@ -192,9 +192,9 @@ def choose_retry_topic(retry_count):
 
 ## 8. 关联知识点
 
-- `077_Kafka_Consumer_Group_与_Offset.md`
-- `081_Kafka_消息分发、多消费者语义与幂等处理.md`
-- `075_流量削峰、异步解耦与最终一致性.md`
+- `004_Kafka_Consumer_Group_与_Offset.md`
+- `008_Kafka_消息分发、多消费者语义与幂等处理.md`
+- `002_流量削峰、异步解耦与最终一致性.md`
 
 ## 9. 复习检查问题
 

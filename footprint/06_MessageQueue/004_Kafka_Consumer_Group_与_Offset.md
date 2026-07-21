@@ -188,10 +188,10 @@ poll → handle business → write idempotent result → commit offset
 
 ## 8. 关联知识点
 
-- `076_Kafka：KRaft、Broker、Topic、Partition、Replica.md`
-- `079_Kafka_重试机制、Retry_Topic_与死信队列.md`
-- `081_Kafka_消息分发、多消费者语义与幂等处理.md`
-- `075_流量削峰、异步解耦与最终一致性.md`
+- `003_Kafka：KRaft、Broker、Topic、Partition、Replica.md`
+- `006_Kafka_重试机制、Retry_Topic_与死信队列.md`
+- `008_Kafka_消息分发、多消费者语义与幂等处理.md`
+- `002_流量削峰、异步解耦与最终一致性.md`
 
 ## 9. 复习检查问题
 

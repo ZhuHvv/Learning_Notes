@@ -138,9 +138,9 @@ queue 是否绑定到了目标 exchange？
 
 ## 8. 关联知识点
 
-- `083_Routing_Key_与_Binding_Key.md`
-- `085_RabbitMQ_延时队列：TTL、死信交换机与延时插件.md`
-- `087_RabbitMQ_Federation：联邦交换机与联邦队列.md`
+- `010_Routing_Key_与_Binding_Key.md`
+- `012_RabbitMQ_延时队列：TTL、死信交换机与延时插件.md`
+- `014_RabbitMQ_Federation：联邦交换机与联邦队列.md`
 
 ## 9. 复习检查问题
 

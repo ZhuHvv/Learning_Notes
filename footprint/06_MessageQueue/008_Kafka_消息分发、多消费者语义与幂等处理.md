@@ -37,7 +37,7 @@ Offset 负责记录进度
 - **同一 group 正常情况**：一个 partition 同一时刻只分配给组内一个 consumer，不会并发重复处理。
 - **同一 group 异常情况**：处理成功但未 commit offset 就崩溃，rebalance 后接管者从旧 offset 重读，产生“恢复后的再次处理”。
 
-三种情况的详细展开见 `077_Kafka_Consumer_Group_与_Offset.md`，本文聚焦由此引出的幂等处理。
+三种情况的详细展开见 `004_Kafka_Consumer_Group_与_Offset.md`，本文聚焦由此引出的幂等处理。
 
 ### 幂等处理是 Kafka 消费端基本功
 
@@ -149,9 +149,9 @@ def pay_order(order_id, event_id):
 
 ## 8. 关联知识点
 
-- `077_Kafka_Consumer_Group_与_Offset.md`
-- `079_Kafka_重试机制、Retry_Topic_与死信队列.md`
-- `080_Kafka_Key、分区策略与热分区.md`
+- `004_Kafka_Consumer_Group_与_Offset.md`
+- `006_Kafka_重试机制、Retry_Topic_与死信队列.md`
+- `007_Kafka_Key、分区策略与热分区.md`
 
 ## 9. 复习检查问题
 

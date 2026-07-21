@@ -211,10 +211,10 @@ def retrieval_with_rewrite(query, history):
 
 ## 8. 关联知识点
 
-- `028_RAG_HyDE_假设文档嵌入.md`
-- `029_RAG_Multi-Query_Expansion_多查询扩展.md`
-- `030_Query_Rewrite、HyDE_与_Multi-Query_对比.md`
-- `024_RAG_完整链路：召回、融合、重排、生成.md`
+- `020_RAG_HyDE_假设文档嵌入.md`
+- `021_RAG_Multi-Query_Expansion_多查询扩展.md`
+- `022_Query_Rewrite、HyDE_与_Multi-Query_对比.md`
+- `016_RAG_完整链路：召回、融合、重排、生成.md`
 
 ## 9. 复习检查问题
 

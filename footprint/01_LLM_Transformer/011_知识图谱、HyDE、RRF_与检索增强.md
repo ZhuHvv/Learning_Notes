@@ -49,7 +49,7 @@ HyDE 先生成一段假设文档，再对它做 Embedding 检索真实文档。�
 q → LLM → hypothetical document h → embedding(h) → vector search
 ```
 
-假设文档可能不准确，所以只能作为检索表示，不能作为最终引用。详细机制见 `028_RAG_HyDE_假设文档嵌入.md`。
+假设文档可能不准确，所以只能作为检索表示，不能作为最终引用。详细机制见 `020_RAG_HyDE_假设文档嵌入.md`。
 
 ### 2.3 RRF：用排名而不是原始分数融合
 
@@ -149,8 +149,8 @@ def enhanced_retrieve(question):
 
 - `012_稠密向量、稀疏向量与多向量表示及检索.md`
 - `013_倒排索引与稀疏检索.md`
-- `028_RAG_HyDE_假设文档嵌入.md`
-- `030_Query_Rewrite、HyDE_与_Multi-Query_对比.md`
+- `020_RAG_HyDE_假设文档嵌入.md`
+- `022_Query_Rewrite、HyDE_与_Multi-Query_对比.md`
 - `010_Bi-encoder、Cross_Encoder_与重排.md`
 
 ## 9. 复习检查问题

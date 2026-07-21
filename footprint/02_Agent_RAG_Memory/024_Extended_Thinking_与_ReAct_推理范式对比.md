@@ -211,11 +211,11 @@ trace.append({
 
 ## 8. 关联知识点
 
-- `015_MRKL、ReAct、ToT_与_Plan-and-Execute.md`
-- `016_Reflection、Insight_与执行后反思.md`
-- `017_ReAct_提前终止检测.md`
-- `025_LangGraph_状态更新、invoke_与_stream.md`
-- `014_Agent_的端到端任务能力.md`
+- `007_MRKL、ReAct、ToT_与_Plan-and-Execute.md`
+- `008_Reflection、Insight_与执行后反思.md`
+- `009_ReAct_提前终止检测.md`
+- `017_LangGraph_状态更新、invoke_与_stream.md`
+- `006_Agent_的端到端任务能力.md`
 
 ## 9. 复习检查问题
 

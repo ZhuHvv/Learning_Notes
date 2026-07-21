@@ -169,9 +169,9 @@ policy apply-to 是 exchanges 还是 queues？
 
 ## 8. 关联知识点
 
-- `082_RabbitMQ：vhost、exchange、queue、binding.md`
-- `083_Routing_Key_与_Binding_Key.md`
-- `075_流量削峰、异步解耦与最终一致性.md`
+- `009_RabbitMQ：vhost、exchange、queue、binding.md`
+- `010_Routing_Key_与_Binding_Key.md`
+- `002_流量削峰、异步解耦与最终一致性.md`
 
 ## 9. 复习检查问题
 

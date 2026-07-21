@@ -204,11 +204,11 @@ Multi-Query：
 
 ## 8. 关联知识点
 
-- `027_RAG_Query_Rewrite_查询改写.md`
-- `028_RAG_HyDE_假设文档嵌入.md`
-- `029_RAG_Multi-Query_Expansion_多查询扩展.md`
+- `019_RAG_Query_Rewrite_查询改写.md`
+- `020_RAG_HyDE_假设文档嵌入.md`
+- `021_RAG_Multi-Query_Expansion_多查询扩展.md`
 - `012_稠密向量、稀疏向量与多向量表示及检索.md`
-- `031_RAGAS_评估指标与_Ground_Truth_来源.md`
+- `023_RAGAS_评估指标与_Ground_Truth_来源.md`
 
 ## 9. 复习检查问题
 

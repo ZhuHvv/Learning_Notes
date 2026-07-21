@@ -161,9 +161,9 @@ keyspace_hits / keyspace_misses
 
 ## 8. 关联知识点
 
-- `065_Redis_基本数据类型与时间存储.md`
-- `068_Redis_限流与_Lua_原子操作.md`
-- `085_RabbitMQ_延时队列：TTL、死信交换机与延时插件.md`
+- `006_Redis_基本数据类型与时间存储.md`
+- `009_Redis_限流与_Lua_原子操作.md`
+- `012_RabbitMQ_延时队列：TTL、死信交换机与延时插件.md`
 
 ## 9. 复习检查问题
 

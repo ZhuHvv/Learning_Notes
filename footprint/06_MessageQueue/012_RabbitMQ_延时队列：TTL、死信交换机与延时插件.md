@@ -283,9 +283,9 @@ def poll():
 
 ## 7. 关联知识点
 
-- `082_RabbitMQ：vhost、exchange、queue、binding.md`
-- `086_RabbitMQ_惰性队列：磁盘优先与消费定位.md`
-- `073_Redis_过期删除：惰性删除、定期删除与内存淘汰.md`
+- `009_RabbitMQ：vhost、exchange、queue、binding.md`
+- `013_RabbitMQ_惰性队列：磁盘优先与消费定位.md`
+- `014_Redis_过期删除：惰性删除、定期删除与内存淘汰.md`
 
 ## 8. 复习检查问题
 

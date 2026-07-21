@@ -242,7 +242,7 @@ func handleRpcRequest(req RpcRequest) RpcResponse {
 
 ### gRPC 与 Go Protobuf 生成代码的衔接
 
-gRPC 中的“客户端代理”并不一定依赖运行时动态代理，而是通过代码生成提前把代理类写出来：`protoc-gen-go` 生成消息结构体（xxx.pb.go），`protoc-gen-go-grpc` 生成 client stub 与 server interface（xxx_grpc.pb.go），`option go_package` 决定生成代码的 Go import path。Go 侧工具链细节（go_package、生成路径、proto 组织与常见报错）见 `057_Protobuf_go_package、生成路径与_proto_文件组织.md`。
+gRPC 中的“客户端代理”并不一定依赖运行时动态代理，而是通过代码生成提前把代理类写出来：`protoc-gen-go` 生成消息结构体（xxx.pb.go），`protoc-gen-go-grpc` 生成 client stub 与 server interface（xxx_grpc.pb.go），`option go_package` 决定生成代码的 Go import path。Go 侧工具链细节（go_package、生成路径、proto 组织与常见报错）见 `017_Protobuf_go_package、生成路径与_proto_文件组织.md`。
 
 ## 7. 常见误区与排查思路
 
@@ -259,11 +259,11 @@ gRPC 中的“客户端代理”并不一定依赖运行时动态代理，而是
 
 ## 8. 关联知识点
 
-- `096_RPC_动态代理与字节码生成.md`：解释客户端代理如何自动生成。
-- `097_RPC_心跳、服务注册与可用性检测.md`：解释服务实例如何注册、续约和摘除。
-- `092_Kubernetes、服务发现与弹性部署.md`：解释容器环境中的服务发现与弹性部署。
-- `093_Prometheus、Grafana、OpenTelemetry_与日志.md`：解释跨服务调用的观测与排障。
-- `094_HTTP_Streaming、SSE、WebSocket_与_gRPC_Streaming.md`：解释 RPC/gRPC 和流式协议的关系。
+- `009_RPC_动态代理与字节码生成.md`：解释客户端代理如何自动生成。
+- `010_RPC_心跳、服务注册与可用性检测.md`：解释服务实例如何注册、续约和摘除。
+- `005_Kubernetes、服务发现与弹性部署.md`：解释容器环境中的服务发现与弹性部署。
+- `006_Prometheus、Grafana、OpenTelemetry_与日志.md`：解释跨服务调用的观测与排障。
+- `007_HTTP_Streaming、SSE、WebSocket_与_gRPC_Streaming.md`：解释 RPC/gRPC 和流式协议的关系。
 
 ## 9. 复习检查问题
 

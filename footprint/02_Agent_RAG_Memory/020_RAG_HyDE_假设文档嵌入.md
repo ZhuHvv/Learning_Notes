@@ -209,9 +209,9 @@ HyDE Gain@K = 使用 HyDE 后新增进入 topK 的正确文档比例
 ## 8. 关联知识点
 
 - `012_稠密向量、稀疏向量与多向量表示及检索.md`
-- `027_RAG_Query_Rewrite_查询改写.md`
-- `029_RAG_Multi-Query_Expansion_多查询扩展.md`
-- `030_Query_Rewrite、HyDE_与_Multi-Query_对比.md`
+- `019_RAG_Query_Rewrite_查询改写.md`
+- `021_RAG_Multi-Query_Expansion_多查询扩展.md`
+- `022_Query_Rewrite、HyDE_与_Multi-Query_对比.md`
 - `011_知识图谱、HyDE、RRF_与检索增强.md`
 
 ## 9. 复习检查问题

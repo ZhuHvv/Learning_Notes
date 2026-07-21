@@ -212,11 +212,11 @@ Unique Contribution(query_i)
 
 ## 8. 关联知识点
 
-- `027_RAG_Query_Rewrite_查询改写.md`
-- `028_RAG_HyDE_假设文档嵌入.md`
-- `030_Query_Rewrite、HyDE_与_Multi-Query_对比.md`
+- `019_RAG_Query_Rewrite_查询改写.md`
+- `020_RAG_HyDE_假设文档嵌入.md`
+- `022_Query_Rewrite、HyDE_与_Multi-Query_对比.md`
 - `011_知识图谱、HyDE、RRF_与检索增强.md`
-- `035_asyncio.wait、done_pending_与_FIRST_COMPLETED.md`
+- `003_asyncio.wait、done_pending_与_FIRST_COMPLETED.md`
 
 ## 9. 复习检查问题
 

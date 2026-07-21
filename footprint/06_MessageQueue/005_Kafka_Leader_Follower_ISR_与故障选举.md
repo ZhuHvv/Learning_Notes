@@ -152,9 +152,9 @@ def update_isr(partition, now):
 
 ## 8. 关联知识点
 
-- `076_Kafka：KRaft、Broker、Topic、Partition、Replica.md`
-- `077_Kafka_Consumer_Group_与_Offset.md`
-- `080_Kafka_Key、分区策略与热分区.md`
+- `003_Kafka：KRaft、Broker、Topic、Partition、Replica.md`
+- `004_Kafka_Consumer_Group_与_Offset.md`
+- `007_Kafka_Key、分区策略与热分区.md`
 
 ## 9. 复习检查问题
 

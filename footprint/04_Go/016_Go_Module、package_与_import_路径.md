@@ -74,7 +74,7 @@ import msg "rpc-learn/proto"
 
 ### 2.3 同一目录必须只有一个 Go package
 
-Go 不允许同一目录下混用不同包名。因此多个 `.proto` 文件若生成到同一个 Go import path，其 Go package name 必须一致，否则 protoc 会报 `inconsistent names` 错误；该报错的成因与两类解决方案（统一 `;package` 或拆目录分包）见 `057_Protobuf_go_package、生成路径与_proto_文件组织.md`。
+Go 不允许同一目录下混用不同包名。因此多个 `.proto` 文件若生成到同一个 Go import path，其 Go package name 必须一致，否则 protoc 会报 `inconsistent names` 错误；该报错的成因与两类解决方案（统一 `;package` 或拆目录分包）见 `017_Protobuf_go_package、生成路径与_proto_文件组织.md`。
 
 ## 3. 机制流程
 
