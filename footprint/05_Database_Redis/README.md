@@ -1,24 +1,61 @@
 # Database / Redis
 
-关系数据库、文档数据库、缓存、索引和分布式状态。
+本目录按“先建立选型视角，再学习具体模型；先会使用 Redis，再理解运行与分布式机制”的顺序组织。相邻文件尽量共享同一主题或直接的前置依赖。
 
 知识点文件数：14
 
-## 文件列表
+## 推荐学习路径
 
-- [数据库选型：SQL、MongoDB、Redis、向量库的分工](001_数据库选型：SQL、MongoDB、Redis、向量库的分工.md)
-- [SQLite：轻量级本地关系数据库](002_SQLite：轻量级本地关系数据库.md)
-- [B+树索引、复合索引与最左前缀](003_B+树索引、复合索引与最左前缀.md)
-- [MySQL   PostgreSQL：事务型关系数据库](004_MySQL___PostgreSQL：事务型关系数据库.md)
-- [MongoDB：文档型数据库与灵活 Schema](005_MongoDB：文档型数据库与灵活_Schema.md)
-- [Redis 基本数据类型与时间存储](006_Redis_基本数据类型与时间存储.md)
-- [Redis 特殊类型：HyperLogLog、Bitmap、Geo、Stream](007_Redis_特殊类型：HyperLogLog、Bitmap、Geo、Stream.md)
-- [Redis 会话状态、临时映射与资源池](008_Redis_会话状态、临时映射与资源池.md)
-- [Redis 限流与 Lua 原子操作](009_Redis_限流与_Lua_原子操作.md)
-- [Redis 复制：PSYNC、FULLRESYNC、RDB 与 backlog](010_Redis_复制：PSYNC、FULLRESYNC、RDB_与_backlog.md)
-- [Redis IO Threads 与事件循环](011_Redis_IO_Threads_与事件循环.md)
-- [Redis Cluster：槽、CLUSTER SLOTS、PFAIL FAIL 与故障转移](012_Redis_Cluster：槽、CLUSTER_SLOTS、PFAIL_FAIL_与故障转移.md)
-- [Redis Sentinel 与 Cluster 的区别](013_Redis_Sentinel_与_Cluster_的区别.md)
-- [Redis 过期删除：惰性删除、定期删除与内存淘汰](014_Redis_过期删除：惰性删除、定期删除与内存淘汰.md)
+### 一、建立存储选型全景
 
-另有：[附_通用学习与排查模板](附_通用学习与排查模板.md)——v11 从本目录各文件抽取的共用模板段，正文中不再重复。
+1. [数据库选型：SQL、MongoDB、Redis、向量库的分工](001_数据库选型：SQL、MongoDB、Redis、向量库的分工.md)
+   先按数据模型、访问模式和一致性要求判断存储职责。
+
+### 二、关系型数据库：从使用到索引原理
+
+2. [SQLite：轻量级本地关系数据库](002_SQLite：轻量级本地关系数据库.md)
+   用最小形态认识关系数据库、SQL 和事务。
+3. [MySQL 与 PostgreSQL：事务型关系数据库](003_MySQL_与_PostgreSQL：事务型关系数据库.md)
+   从本地嵌入式数据库过渡到服务端事务数据库。
+4. [B+树索引、复合索引与最左前缀](004_B+树索引、复合索引与最左前缀.md)
+   在理解查询与事务之后进入索引结构和查询优化。
+
+### 三、从关系模型过渡到文档模型
+
+5. [MongoDB：文档型数据库与灵活 Schema](005_MongoDB：文档型数据库与灵活_Schema.md)
+   对比表结构约束，理解文档聚合、嵌入与引用。
+
+### 四、Redis 基础：数据结构与生命周期
+
+6. [Redis 基本数据类型与时间存储](006_Redis_基本数据类型与时间存储.md)
+   掌握 String、Hash、List、Set、ZSet、时间戳与 TTL。
+7. [Redis 特殊类型：HyperLogLog、Bitmap、Geo、Stream](007_Redis_特殊类型：HyperLogLog、Bitmap、Geo、Stream.md)
+   从基本类型扩展到统计、位状态、地理位置与消息流。
+8. [Redis 过期删除：惰性删除、定期删除与内存淘汰](008_Redis_过期删除：惰性删除、定期删除与内存淘汰.md)
+   理解 TTL 到期、物理删除和内存压力淘汰之间的区别。
+
+### 五、Redis 应用与执行机制
+
+9. [Redis 会话状态、临时映射与资源池](009_Redis_会话状态、临时映射与资源池.md)
+   将数据结构和 TTL 用于常见临时状态。
+10. [Redis 限流与 Lua 原子操作](010_Redis_限流与_Lua_原子操作.md)
+    从单条命令进入并发竞态和多命令原子性。
+11. [Redis IO Threads 与事件循环](011_Redis_IO_Threads_与事件循环.md)
+    理解命令如何被读取、串行执行并返回，以及慢操作为何会阻塞。
+
+### 六、Redis 分布式机制
+
+12. [Redis 复制：PSYNC、FULLRESYNC、RDB 与 backlog](012_Redis_复制：PSYNC、FULLRESYNC、RDB_与_backlog.md)
+    从单节点进入副本同步、断线续传和复制延迟。
+13. [Redis Sentinel 与 Cluster：高可用和分片选型](013_Redis_Sentinel_与_Cluster：高可用和分片选型.md)
+    先区分单分片高可用与多分片横向扩展。
+14. [Redis Cluster：槽、路由与故障转移](014_Redis_Cluster：槽、路由与故障转移.md)
+    最后深入 slot、拓扑发现、重定向、故障确认和副本晋升。
+
+## 阅读边界
+
+- 编号代表推荐的首次学习顺序，不代表不同数据库之间存在严格依赖。
+- 第 001—005 篇解决“选什么”，第 006—010 篇解决“怎么用”，第 011—014 篇解决“为什么这样运行、如何扩展和容错”。
+- 复制篇只要求预先知道 RDB 是快照；RDB/AOF 的完整持久化与恢复策略尚未在本目录单独成篇。
+
+另有：[附：通用学习与排查模板](附_通用学习与排查模板.md)，用于复习、工程排查和面试表达。

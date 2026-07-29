@@ -1,5 +1,6 @@
 # Redis IO Threads 与事件循环
 
+> 学习定位：从“会使用 Redis”进入“理解 Redis 如何执行命令”；建议先掌握命令与 Lua 的原子执行语义。
 > 所属分类：Database / Redis / Vector DB  
 > 修订版本：v11  
 > 质量要求：本文件只解释本知识点，不复用其他知识点的原理段；示例尽量给出代码、伪代码、命令或配置。
@@ -63,4 +64,3 @@ io-threads-do-reads yes
 ## 6. 你在讨论中的理解推进
 
 理解 IO threads 的边界，避免误以为 Redis 变成多线程命令执行。
-

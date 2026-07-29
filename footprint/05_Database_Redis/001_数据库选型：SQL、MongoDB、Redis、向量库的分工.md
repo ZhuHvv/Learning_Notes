@@ -1,5 +1,6 @@
 # 数据库选型：SQL、MongoDB、Redis、向量库的分工
 
+> 学习定位：本目录总览；先建立“数据模型、访问模式、一致性要求”的选型框架。
 > 所属分类：Database / Redis / Vector DB  
 > 修订版本：v9 昨日今日增量版  
 > 质量要求：本文件只解释本知识点，不复用其他知识点的原理段；示例尽量给出代码、伪代码、命令或配置。
@@ -57,4 +58,3 @@ RAG embedding -> Milvus/pgvector
 ## 6. 你在讨论中的理解推进
 
 你从 MongoDB、Redis、Milvus、SQL 逐步建立按数据形态选型的思路。
-

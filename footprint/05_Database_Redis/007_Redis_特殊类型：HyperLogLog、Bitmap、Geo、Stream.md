@@ -1,5 +1,6 @@
 # Redis 特殊类型：HyperLogLog、Bitmap、Geo、Stream
 
+> 学习定位：Redis 数据结构扩展；建议先掌握 String、Set 与 ZSet 的基本语义。
 > 所属分类：Database / Redis / Vector DB  
 > 修订版本：v11  
 > 质量要求：本文件只解释本知识点，不复用其他知识点的原理段；示例尽量给出代码、伪代码、命令或配置。
@@ -61,4 +62,3 @@ XADD orders * user u1 amount 99
 ## 6. 你在讨论中的理解推进
 
 你专门问过 HyperLogLog，这里扩展到特殊类型的选型。
-

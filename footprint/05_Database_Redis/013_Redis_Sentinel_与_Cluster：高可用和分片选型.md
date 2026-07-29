@@ -1,5 +1,6 @@
-# Redis Sentinel 与 Cluster 的区别
+# Redis Sentinel 与 Cluster：高可用和分片选型
 
+> 学习定位：Redis 部署架构选型；建议先理解主从复制，再进入 Cluster 的槽与路由细节。
 > 所属分类：Database / Redis / Vector DB  
 > 修订版本：v9 昨日今日增量版  
 > 质量要求：本文件只解释本知识点，不复用其他知识点的原理段；示例尽量给出代码、伪代码、命令或配置。
@@ -56,4 +57,3 @@ Cluster: sharding + HA, 16384 slots
 ## 6. 你在讨论中的理解推进
 
 复制、Sentinel、Cluster 要拆开理解：副本、自动切换、分片扩展。
-

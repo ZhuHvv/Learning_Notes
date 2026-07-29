@@ -1,5 +1,6 @@
 # Redis 限流与 Lua 原子操作
 
+> 学习定位：Redis 并发应用进阶；建议先掌握 TTL、计数器与临时状态建模。
 > 所属分类：Database / Redis / Vector DB  
 > 修订版本：v9 昨日今日增量版  
 > 质量要求：本文件只解释本知识点，不复用其他知识点的原理段；示例尽量给出代码、伪代码、命令或配置。
@@ -63,4 +64,3 @@ if n > tonumber(ARGV[2]) then return 0 else return 1 end
 ## 6. 你在讨论中的理解推进
 
 分布式限流不能只会 INCR，还要保证 INCR 和 EXPIRE 的原子性。
-

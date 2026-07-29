@@ -1,5 +1,6 @@
 # Redis 过期删除：惰性删除、定期删除与内存淘汰
 
+> 学习定位：Redis 数据生命周期与容量基础；建议先掌握基本类型和 TTL 的用法。
 > 所属分类：Database / Redis  
 > 修订版本：v9 昨日今日增量版  
 > 质量要求：本文件只解释本知识点，不复用其他知识点的原理段；示例尽量给出代码、伪代码、命令或配置。
@@ -112,6 +113,9 @@ func VerifyCode(ctx context.Context, rdb *redis.Client, phone, input string) boo
     if err == redis.Nil {
         return false // 可能是不存在，也可能是访问时发现过期并删除
     }
+    if err != nil {
+        return false // 网络、超时等错误不能当作校验成功
+    }
     return val == input
 }
 ```
@@ -161,9 +165,10 @@ keyspace_hits / keyspace_misses
 
 ## 8. 关联知识点
 
-- `006_Redis_基本数据类型与时间存储.md`
-- `009_Redis_限流与_Lua_原子操作.md`
-- `012_RabbitMQ_延时队列：TTL、死信交换机与延时插件.md`
+- [Redis 基本数据类型与时间存储](006_Redis_基本数据类型与时间存储.md)
+- [Redis 会话状态、临时映射与资源池](009_Redis_会话状态、临时映射与资源池.md)
+- [Redis 限流与 Lua 原子操作](010_Redis_限流与_Lua_原子操作.md)
+- [RabbitMQ 延时队列：TTL、死信交换机与延时插件](../06_MessageQueue/012_RabbitMQ_延时队列：TTL、死信交换机与延时插件.md)
 
 ## 9. 复习检查问题
 

@@ -1,10 +1,10 @@
 {
-    "version":  "v12_学习顺序重构版+MessageQueue知识聚类",
+    "version":  "v12_学习顺序重构版+Database_Redis与MessageQueue知识聚类",
     "created_at":  "2026-07-29",
     "base_version":  "v10_LLM_RAG评估增量版",
     "knowledge_file_count":  114,
     "markdown_file_count":  138,
-    "renumbered":  "当前知识库按 0x_分类目录独立维护文件序号；2026-07-21 将 02-07 目录的知识点文件改为各目录从 001 起连续编号，并新增 08 Claude Code 专题；2026-07-26 将该专题扩充至 001-007；2026-07-29 将 06_MessageQueue 重排为通用基础、Kafka 连续链路、RabbitMQ 连续链路和综合选型。",
+    "renumbered":  "当前知识库按 0x_分类目录独立维护文件序号；2026-07-21 将 02-07 目录的知识点文件改为各目录从 001 起连续编号，并新增 08 Claude Code 专题；2026-07-26 将该专题扩充至 001-007；2026-07-29 将 05_Database_Redis 重排为选型、关系型、文档型、Redis 基础、应用与分布式机制，将 06_MessageQueue 重排为通用基础、Kafka 连续链路、RabbitMQ 连续链路和综合选型。",
     "merged_in_v11":  [
                           {
                               "kept":  "01_LLM_Transformer/012_稠密向量、稀疏向量与多向量表示及检索.md",
@@ -78,6 +78,20 @@
                                     "absorbed_old":  [
                                                          "011_Kafka_vs_RabbitMQ：事件流与业务路由.md"
                                                      ]
+                                },
+                                {
+                                    "scope":  "05_Database_Redis",
+                                    "order":  "选型 → 关系型 → 文档型 → Redis 数据结构与生命周期 → 应用与执行机制 → 复制、高可用与分片",
+                                    "renamed":  [
+                                                    "003_B+树索引、复合索引与最左前缀.md → 004_B+树索引、复合索引与最左前缀.md",
+                                                    "004_MySQL___PostgreSQL：事务型关系数据库.md → 003_MySQL_与_PostgreSQL：事务型关系数据库.md",
+                                                    "008_Redis_会话状态、临时映射与资源池.md → 009_Redis_会话状态、临时映射与资源池.md",
+                                                    "009_Redis_限流与_Lua_原子操作.md → 010_Redis_限流与_Lua_原子操作.md",
+                                                    "010_Redis_复制：PSYNC、FULLRESYNC、RDB_与_backlog.md → 012_Redis_复制：PSYNC、FULLRESYNC、RDB_与_backlog.md",
+                                                    "012_Redis_Cluster：槽、CLUSTER_SLOTS、PFAIL_FAIL_与故障转移.md → 014_Redis_Cluster：槽、路由与故障转移.md",
+                                                    "013_Redis_Sentinel_与_Cluster_的区别.md → 013_Redis_Sentinel_与_Cluster：高可用和分片选型.md",
+                                                    "014_Redis_过期删除：惰性删除、定期删除与内存淘汰.md → 008_Redis_过期删除：惰性删除、定期删除与内存淘汰.md"
+                                                ]
                                 }
                             ],
     "deleted_in_v11":  [
@@ -118,8 +132,8 @@
                   },
                   {
                       "path":  "00_总体索引.md",
-                      "size":  20298,
-                      "sha256":  "18e95184d436aabe"
+                      "size":  20294,
+                      "sha256":  "4f990bef8c298a0b"
                   },
                   {
                       "path":  "00_总体知识网络图.md",
@@ -518,78 +532,78 @@
                   },
                   {
                       "path":  "05_Database_Redis/001_数据库选型：SQL、MongoDB、Redis、向量库的分工.md",
-                      "size":  2048,
-                      "sha256":  "c78385ea69c4da2e"
+                      "size":  2161,
+                      "sha256":  "3bceb6fc86f58476"
                   },
                   {
                       "path":  "05_Database_Redis/002_SQLite：轻量级本地关系数据库.md",
-                      "size":  1788,
-                      "sha256":  "6988ffc632e535ae"
+                      "size":  1895,
+                      "sha256":  "a2849dbaaa6bf9b1"
                   },
                   {
-                      "path":  "05_Database_Redis/003_B+树索引、复合索引与最左前缀.md",
-                      "size":  2019,
-                      "sha256":  "79d689cc3ae67420"
+                      "path":  "05_Database_Redis/003_MySQL_与_PostgreSQL：事务型关系数据库.md",
+                      "size":  2328,
+                      "sha256":  "967d50e66f501f6b"
                   },
                   {
-                      "path":  "05_Database_Redis/004_MySQL___PostgreSQL：事务型关系数据库.md",
-                      "size":  2210,
-                      "sha256":  "e86b866d4ae32036"
+                      "path":  "05_Database_Redis/004_B+树索引、复合索引与最左前缀.md",
+                      "size":  2141,
+                      "sha256":  "f28cfd5a8f1ead39"
                   },
                   {
                       "path":  "05_Database_Redis/005_MongoDB：文档型数据库与灵活_Schema.md",
-                      "size":  1965,
-                      "sha256":  "180a854b95022bd2"
+                      "size":  2090,
+                      "sha256":  "0e56697101c00f2f"
                   },
                   {
                       "path":  "05_Database_Redis/006_Redis_基本数据类型与时间存储.md",
-                      "size":  1892,
-                      "sha256":  "fdac4acf2489c37d"
+                      "size":  1994,
+                      "sha256":  "3bbbd36effc31e55"
                   },
                   {
                       "path":  "05_Database_Redis/007_Redis_特殊类型：HyperLogLog、Bitmap、Geo、Stream.md",
-                      "size":  2030,
-                      "sha256":  "339b4a19f3641547"
+                      "size":  2130,
+                      "sha256":  "f80826df16196171"
                   },
                   {
-                      "path":  "05_Database_Redis/008_Redis_会话状态、临时映射与资源池.md",
-                      "size":  1934,
-                      "sha256":  "7aaa376146fb0b77"
+                      "path":  "05_Database_Redis/008_Redis_过期删除：惰性删除、定期删除与内存淘汰.md",
+                      "size":  6664,
+                      "sha256":  "b58a9bf0eb7cd4a2"
                   },
                   {
-                      "path":  "05_Database_Redis/009_Redis_限流与_Lua_原子操作.md",
-                      "size":  1920,
-                      "sha256":  "b94fc6d8a5217f50"
+                      "path":  "05_Database_Redis/009_Redis_会话状态、临时映射与资源池.md",
+                      "size":  2042,
+                      "sha256":  "197f6740f4e21ee9"
                   },
                   {
-                      "path":  "05_Database_Redis/010_Redis_复制：PSYNC、FULLRESYNC、RDB_与_backlog.md",
-                      "size":  1909,
-                      "sha256":  "457938394ee4f1be"
+                      "path":  "05_Database_Redis/010_Redis_限流与_Lua_原子操作.md",
+                      "size":  2019,
+                      "sha256":  "3456f5a069d74625"
                   },
                   {
                       "path":  "05_Database_Redis/011_Redis_IO_Threads_与事件循环.md",
-                      "size":  2189,
-                      "sha256":  "cc3f5d48bbc33aee"
+                      "size":  2329,
+                      "sha256":  "d82736b697c7e819"
                   },
                   {
-                      "path":  "05_Database_Redis/012_Redis_Cluster：槽、CLUSTER_SLOTS、PFAIL_FAIL_与故障转移.md",
-                      "size":  2504,
-                      "sha256":  "982cd162a51e2257"
+                      "path":  "05_Database_Redis/012_Redis_复制：PSYNC、FULLRESYNC、RDB_与_backlog.md",
+                      "size":  2033,
+                      "sha256":  "d834f0b6549039a5"
                   },
                   {
-                      "path":  "05_Database_Redis/013_Redis_Sentinel_与_Cluster_的区别.md",
-                      "size":  1804,
-                      "sha256":  "f75f4e1a3e3a8180"
+                      "path":  "05_Database_Redis/013_Redis_Sentinel_与_Cluster：高可用和分片选型.md",
+                      "size":  1937,
+                      "sha256":  "b030d336053c58a6"
                   },
                   {
-                      "path":  "05_Database_Redis/014_Redis_过期删除：惰性删除、定期删除与内存淘汰.md",
-                      "size":  6198,
-                      "sha256":  "78e67112faafc7a4"
+                      "path":  "05_Database_Redis/014_Redis_Cluster：槽、路由与故障转移.md",
+                      "size":  2755,
+                      "sha256":  "29f3b394226da59b"
                   },
                   {
                       "path":  "05_Database_Redis/README.md",
-                      "size":  1788,
-                      "sha256":  "cc2c317c968885d4"
+                      "size":  3551,
+                      "sha256":  "25f1bf7abfaeae5c"
                   },
                   {
                       "path":  "05_Database_Redis/附_通用学习与排查模板.md",

@@ -1,5 +1,6 @@
 # Redis 复制：PSYNC、FULLRESYNC、RDB 与 backlog
 
+> 学习定位：Redis 分布式数据基础；建议先理解事件循环，并知道 RDB 是内存数据的快照形式。
 > 所属分类：Database / Redis / Vector DB  
 > 修订版本：v9 昨日今日增量版  
 > 质量要求：本文件只解释本知识点，不复用其他知识点的原理段；示例尽量给出代码、伪代码、命令或配置。
@@ -63,4 +64,3 @@ master: FULLRESYNC <newid> <offset> + RDB
 ## 6. 你在讨论中的理解推进
 
 抓住 PSYNC、FULLRESYNC、RDB、backlog 的关系即可理解复制。
-

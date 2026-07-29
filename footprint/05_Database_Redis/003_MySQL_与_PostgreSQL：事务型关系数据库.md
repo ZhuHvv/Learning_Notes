@@ -1,5 +1,6 @@
-# MySQL   PostgreSQL：事务型关系数据库
+# MySQL 与 PostgreSQL：事务型关系数据库
 
+> 学习定位：服务端关系型数据库入门；建议先理解 SQLite 中表、SQL 与事务的基本概念。
 > 所属分类：Database / Redis / Vector DB  
 > 修订版本：v11  
 > 质量要求：本文件只解释本知识点，不复用其他知识点的原理段；示例尽量给出代码、伪代码、命令或配置。
@@ -66,4 +67,3 @@ return tx.Commit() // Commit 的错误同样必须检查，不能忽略
 ## 6. 你在讨论中的理解推进
 
 你在 Gin 示例里用 QueryRowContext；应始终结合 context 和参数化查询。
-
