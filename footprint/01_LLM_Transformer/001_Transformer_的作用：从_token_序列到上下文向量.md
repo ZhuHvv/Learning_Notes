@@ -1,8 +1,9 @@
 # Transformer 的作用：从 token 序列到上下文向量
 
 > 所属分类：LLM / Transformer  
-> 修订版本：v9 昨日今日增量版  
+> 修订版本：v12 学习顺序审查版
 > 质量要求：本文件只解释本知识点，不复用其他知识点的原理段；示例尽量给出代码、伪代码、命令或配置。
+> 阅读定位：本篇只建立全局地图；Token、Attention、FFN 等名词会在 002～005 中由浅入深展开。
 
 ## 1. 总体性概念
 
@@ -25,7 +26,8 @@ Transformer 并不是把一句话整体当成一个黑盒字符串处理，而�
 一个极简抽象：
 
 ```python
-X = token_embedding(tokens) + position_embedding(tokens)
+X = token_embedding(tokens)
+X = inject_position_information(X)  # 如绝对位置向量；RoPE 则通常作用在注意力的 Q/K 上
 for block in transformer_blocks:
     X = X + block.self_attention(norm(X))   # 跨 token 交换信息
     X = X + block.ffn(norm(X))              # 每个 token 独立做特征变换
@@ -45,7 +47,7 @@ return X  # [seq_len, hidden_size]，每一行都是上下文化后的 token 表
 更细地看，Transformer 的主流程可以拆成 6 步：
 
 1. 文本被 tokenizer 切成 token id。
-2. token id 查表得到 embedding，并加上位置编码。
+2. token id 查表得到 embedding，并通过绝对位置向量、RoPE 等方式注入位置信息。
 3. 每层先通过自注意力计算 token 之间的依赖关系。
 4. 再通过 FFN 对每个位置的表示做非线性投影。
 5. 多层堆叠后，每个位置都得到上下文化表示。
@@ -53,9 +55,9 @@ return X  # [seq_len, hidden_size]，每一行都是上下文化后的 token 表
 
 ```python
 def transformer_forward(token_ids):
-    x = embed[token_ids] + pos_embed[:len(token_ids)]
+    x = embed[token_ids]
     for layer in layers:
-        attn_out = layer.attention(layer.norm1(x))
+        attn_out = layer.attention(layer.norm1(x), position_ids=range(len(token_ids)))
         x = x + attn_out
         ffn_out = layer.ffn(layer.norm2(x))
         x = x + ffn_out
@@ -82,4 +84,3 @@ for _ in range(max_new_tokens):
 ## 6. 你在讨论中的理解推进
 
 你从“Transformer 是否只是训练用”推进到：它是模型结构，训练时学习参数，推理时用参数逐步计算输出。
-

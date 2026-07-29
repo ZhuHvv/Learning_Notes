@@ -1,7 +1,7 @@
 # Token、Embedding、Seq Len 与 Hidden Size
 
 > 所属分类：LLM / Transformer  
-> 修订版本：v9 昨日今日增量版  
+> 修订版本：v12 学习顺序审查版
 > 质量要求：本文件只解释本知识点，不复用其他知识点的原理段；示例尽量给出代码、伪代码、命令或配置。
 
 ## 1. 总体性概念
@@ -45,13 +45,15 @@ x.shape == (2, 5, 768)
 input_ids: [101, 2769, 4263, 102]
   ↓ embedding lookup
 Token Embedding: [seq_len, hidden_size]
-  + Position Embedding
+  ↓ 注入位置信息
+  ├─ 绝对位置向量：与 Token Embedding 相加
+  └─ RoPE 等相对位置方法：通常在 Attention 内作用于 Q/K
   + 可选 Segment/Type Embedding
   ↓
 Transformer Block 输入 X
 ```
 
-工程排查时要特别关注三个维度：`batch_size`、`seq_len`、`hidden_size`。很多初学 bug 不是算法错，而是把 `[B, S, H]` 错当成 `[S, H]`，或者在 padding 后没有正确设置 attention mask，导致模型把补齐位置也当成真实 token 处理。
+无论采用哪种位置方案，主干 hidden state 的形状通常仍是 `[B, S, H]`。工程排查时要特别关注 `batch_size`、`seq_len`、`hidden_size`，还要区分 padding mask、causal mask 和 position id。很多初学 bug 不是算法错，而是把 `[B, S, H]` 错当成 `[S, H]`，或者在 padding 后没有正确设置 mask，导致模型把补齐位置也当成真实 token 处理。
 
 ## 4. 类比理解
 
@@ -69,4 +71,3 @@ print(len(X), len(X[0]))  # 5 768
 ## 6. 你在讨论中的理解推进
 
 你问过为什么每个 token 是 hidden size 向量却说 X 是 `[seq_len, hidden_size]`；关键是“一行一个 token”。
-

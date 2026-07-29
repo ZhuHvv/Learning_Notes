@@ -213,7 +213,157 @@ rg -n "TODO|FIXME" src
 
 这比先输出整个目录或大文件，再让模型从海量文本中筛选更节省上下文。
 
-## 7. 为什么 Claude Code 的本地代码检索不必默认依赖 RAG
+## 7. Language Server、LSP 与文本搜索的边界
+
+### 7.1 LSP 是协议，Language Server 是实现
+
+Language Server Protocol（LSP）规定编辑器或 Agent 与语言服务器之间怎样交换代码智能请求。两者关系类似：
+
+```text
+HTTP                         Web Server
+协议                         Nginx / Apache
+
+LSP                          Language Server
+协议                         gopls / clangd / rust-analyzer / Pyright
+```
+
+典型结构：
+
+```text
+VS Code / Neovim / Agent
+        LSP Client
+            │
+            │ JSON-RPC
+            ▼
+gopls / clangd / Pyright
+     Language Server
+            │
+            ├── AST
+            ├── 作用域与符号表
+            ├── 类型检查结果
+            ├── 导入/依赖关系
+            └── 交叉引用索引
+```
+
+“服务器”不表示一定在远程机器上监听 HTTP 端口。最常见的语言服务器是由编辑器启动的本地常驻进程，通过标准输入输出或其它进程间通信方式传输 JSON-RPC 消息。
+
+### 7.2 grep/rg 回答文本问题，LSP 回答语义问题
+
+假设代码中有两个同名方法：
+
+```go
+type UserService struct{}
+
+func (*UserService) Get(id int) {}
+
+type OrderService struct{}
+
+func (*OrderService) Get(id int) {}
+```
+
+文本搜索：
+
+```bash
+rg -n '\bGet\b' .
+```
+
+可以召回两个定义和所有包含 `Get` 的文本，但不能只凭字符判断：
+
+```go
+userService.Get(1)
+```
+
+绑定到哪个声明。
+
+LSP 定义跳转请求会携带“文件 + 光标位置”。语言服务器结合 AST、变量类型、作用域和方法集合，把调用绑定到 `(*UserService).Get`。
+
+因此两类工具的核心差异是：
+
+```text
+rg/grep：
+哪些文本位置匹配这个模式？
+
+LSP：
+这个位置上的程序符号是什么，
+它定义在哪里、有哪些真实引用、推导出的类型是什么？
+```
+
+### 7.3 常见 LSP 能力
+
+- `textDocument/definition`：跳转定义；
+- `textDocument/references`：查找语义引用；
+- `textDocument/hover`：查看类型与文档；
+- `textDocument/completion`：补全；
+- `textDocument/rename`：生成跨文件重命名编辑；
+- `textDocument/publishDiagnostics`：发布语法、类型等诊断。
+
+编辑器还会用 `didOpen`、`didChange` 等消息把当前缓冲区内容同步给语言服务器，所以它可以分析尚未保存到磁盘的代码。普通 `rg` 默认搜索磁盘文件，看不到编辑器里的未保存修改。
+
+### 7.4 语言服务器为什么长期运行
+
+语言服务器通常会缓存工作区状态，而不是每次查询都从头解析整个仓库：
+
+```text
+读取文件
+  ↓
+解析 AST
+  ↓
+建立包/模块依赖和类型信息
+  ↓
+建立符号引用索引
+  ↓
+文件修改后增量失效与重算
+```
+
+它常复用编译器前端的解析和类型检查能力，但目标不同：
+
+| 维度 | 编译器 | 语言服务器 |
+|---|---|---|
+| 主要目标 | 构建目标程序并报告错误 | 为编辑过程提供低延迟代码智能 |
+| 生命周期 | 一次构建或批处理 | 长期运行 |
+| 输入 | 通常以磁盘工程为主 | 工作区、光标和未保存缓冲区 |
+| 输出 | 二进制/字节码/构建诊断 | 定义、引用、补全、重命名、诊断 |
+| 更新方式 | 重新构建或增量编译 | 缓存、快照与按需重算 |
+
+### 7.5 LSP 也不是绝对真相
+
+语言服务器依赖正确的工作区和构建环境。以下情况会导致结果缺失或错误：
+
+- 依赖未安装或生成代码不存在；
+- workspace 根目录、构建标签或条件编译配置错误；
+- 代码存在严重语法错误；
+- 反射、字符串调用、运行时插件、动态导入或宏展开超出静态分析能力；
+- 语言服务器本身存在缺陷或索引尚未完成。
+
+例如：
+
+```go
+reflect.ValueOf(service).MethodByName("GetUser")
+```
+
+`"GetUser"` 与真实方法的关联发生在运行时，LSP 很难把它可靠列为静态引用；这时文本搜索反而重要：
+
+```bash
+rg -n '"GetUser"' .
+```
+
+### 7.6 代码 Agent 中的组合顺序
+
+```text
+Glob/rg 广泛召回候选文件
+            ↓
+Read 读取局部证据
+            ↓
+LSP 确认定义、引用、实现和类型
+            ↓
+修改代码
+            ↓
+LSP diagnostics + 编译 + 测试验证
+```
+
+`rg` 适合搜索注释、配置、日志、错误码和动态字符串；LSP 适合做符号消歧和语义验证。两者不是替代关系。
+
+## 8. 为什么 Claude Code 的本地代码检索不必默认依赖 RAG
 
 博客把 Claude Code 的选择概括为“用 grep，而不用 RAG”。可保留的核心不是否定 RAG，而是：**本地代码库中的很多问题有精确、低成本、实时的权威信号。**
 
@@ -245,9 +395,9 @@ LSP 查定义、引用、实现和类型（需要安装对应 code intelligence 
 
 这不是“一次 grep 代替所有检索”，而是让模型在多轮工具使用中控制搜索策略。
 
-## 8. 博客“RAG 的问题”需要怎样修正
+## 9. 博客“RAG 的问题”需要怎样修正
 
-### 8.1 代码切片会破坏结构：有风险，但不是必然
+### 9.1 代码切片会破坏结构：有风险，但不是必然
 
 固定字符切片确实可能把函数、类或调用链切断。生产代码 RAG 可以使用：
 
@@ -260,7 +410,7 @@ LSP 查定义、引用、实现和类型（需要安装对应 code intelligence 
 
 所以问题应写成“朴素 chunking 会丢结构”，不能写成“所有 RAG 必然破坏代码结构”。
 
-### 8.2 向量是近似召回：正确，但可与精确检索组合
+### 9.2 向量是近似召回：正确，但可与精确检索组合
 
 向量相似度不等于代码正确性，也不能替代：
 
@@ -272,11 +422,11 @@ LSP 查定义、引用、实现和类型（需要安装对应 code intelligence 
 
 但向量检索可以作为候选生成器，随后再用关键字、元数据、重排和回源校验。
 
-### 8.3 索引会滞后：取决于更新机制
+### 9.3 索引会滞后：取决于更新机制
 
 本地直接搜索天然看到当前磁盘。RAG 若只离线每日建索引会滞后；若有文件监控、增量索引、commit/branch 版本键，则可显著降低滞后。这里是工程成本与一致性策略的权衡，不是 RAG 的逻辑必然。
 
-### 8.4 “模型越来越强，所以不需要 RAG”不是可靠结论
+### 9.4 “模型越来越强，所以不需要 RAG”不是可靠结论
 
 模型能力增强会提升：
 
@@ -295,7 +445,7 @@ LSP 查定义、引用、实现和类型（需要安装对应 code intelligence 
 
 更强的模型通常会**更好地使用检索工具**，而不是自动让检索消失。
 
-## 9. 什么时候应增加 RAG 或代码索引
+## 10. 什么时候应增加 RAG 或代码索引
 
 以下条件出现时，单纯实时 Grep 的收益会下降：
 
@@ -314,7 +464,7 @@ LSP 查定义、引用、实现和类型（需要安装对应 code intelligence 
 第四层：重排与回源，避免直接把近似召回当答案
 ```
 
-## 10. `grep` 仍然适合什么场景
+## 11. `grep` 仍然适合什么场景
 
 `grep` 并没有被 `rg` 完全替代：
 
@@ -332,7 +482,7 @@ curl -s http://localhost:8080/metrics | grep request_total
 
 `rg` 同样可以读取标准输入，但在单一数据流中，其项目遍历和过滤优势不明显。
 
-## 11. 选择速查
+## 12. 选择速查
 
 | 场景 | 优先选择 | 原因 |
 |---|---|---|
@@ -346,15 +496,16 @@ curl -s http://localhost:8080/metrics | grep request_total
 | 当前仓库精确代码定位 | Claude Code Grep / Glob / Read / LSP | 实时、可解释、无需索引 |
 | 跨仓库模糊语义查询 | 混合 RAG + 重排 + 回源 | 扩大候选范围，同时保留精确验证 |
 
-## 12. 你在讨论中的理解推进
+## 13. 你在讨论中的理解推进
 
 - 起点：把 `grep` 和 `ripgrep` 都理解为“在文件里找字符串”。
 - 推进：发现 `rg` 默认递归，并把 Git ignore、隐藏文件、二进制文件等项目语义纳入搜索。
 - 工程化理解：Agent 搜索不仅关心命令耗时，也关心返回多少无关结果、消耗多少上下文。
 - 产品连接：Claude Code 的 Grep 工具底层使用 ripgrep，并与 Glob、Read、LSP 和 Agent Loop 组合，不是只运行一次 Shell `grep`。
+- 语义推进：进一步区分 LSP 协议与语言服务器实现，并明确文本召回与符号语义查询的边界。
 - 最终连接：精确搜索与 RAG 不是信仰对立；单仓实时代码优先使用权威本地工具，跨仓语义场景再增加混合检索。
 
-## 13. 常见误区
+## 14. 常见误区
 
 - **误区：`rg` 搜不到就是文件中没有。** 文件可能被 ignore、隐藏文件或二进制规则过滤。
 - **误区：`rg -uuu` 适合日常默认使用。** 它会逐层关闭保护性过滤，结果可能非常大，应只用于定向排查。
@@ -362,24 +513,31 @@ curl -s http://localhost:8080/metrics | grep request_total
 - **误区：`rg` 支持所有 PCRE 正则。** 默认引擎不支持 look-around 和回溯引用，需要 `-P`。
 - **误区：Agent 搜索越宽越保险。** 过宽查询会放大工具输出和上下文噪声，通常应先窄后宽。
 - **误区：Claude Code 的 Grep 工具底层就是 POSIX `grep`。** 官方文档明确说明它基于 ripgrep。
+- **误区：语言服务器就是远程 HTTP 服务。** 它通常是编辑器启动的本地常驻进程；“服务器”表示提供语言能力的一方。
+- **误区：LSP 是一个具体的代码分析程序。** LSP 是通信协议，`gopls`、`clangd`、Pyright 等才是语言服务器。
+- **误区：LSP 是更快的 grep。** LSP 查询 AST、作用域、类型和符号索引，解决的是语义问题。
+- **误区：LSP 的引用结果永远完整。** 反射、生成代码缺失、错误构建配置和动态加载都可能突破静态分析边界。
 - **误区：不用向量库就等于没有检索系统。** Glob、Grep、Read、LSP 与多轮查询改写共同构成检索闭环。
 - **误区：代码 RAG 一定无用。** 跨仓库、模糊语义和混合知识库仍是它的合适场景。
 - **误区：模型变强会消除外部检索。** 模型仍需要获取未进入上下文的最新外部事实。
 
-## 14. 关联知识点
+## 15. 关联知识点
 
 - `001_Claude_Code_Prompt_前缀缓存与三级上下文.md`
 - `004_Claude_Code_上下文压缩、Microcompact_与状态恢复.md`
 - `006_Claude_Code_Agent_Loop、Query_生命周期与工具编排.md`
 - `007_Claude_Code_记忆体系：CLAUDE.md、Rules_与_Auto_Memory.md`
-- `../01_LLM_Transformer/013_倒排索引与稀疏检索.md`
-- `../01_LLM_Transformer/012_稠密向量、稀疏向量与多向量表示及检索.md`
-- `../02_Agent_RAG_Memory/016_RAG_完整链路：召回、融合、重排、生成.md`
+- `../01_LLM_Transformer/011_倒排索引与稀疏检索.md`
+- `../01_LLM_Transformer/010_稠密向量、稀疏向量与多向量表示及检索.md`
+- `../02_Agent_RAG_Memory/018_RAG_完整链路：召回、融合、重排、生成.md`
 - `../07_Backend_Deploy_Network/008_沙箱、权限与工具执行安全.md`
 
-## 15. 参考资料与事实边界
+## 16. 参考资料与事实边界
 
 - [Claude Code Tools Reference](https://code.claude.com/docs/en/tools-reference)
+- [Language Server Protocol 官方概览](https://microsoft.github.io/language-server-protocol/)
+- [Language Server Protocol 当前规范](https://microsoft.github.io/language-server-protocol/specifications/specification-current)
+- [Go 官方 gopls 文档](https://go.dev/gopls/)
 - [ripgrep User Guide](https://github.com/BurntSushi/ripgrep/blob/master/GUIDE.md)
 - [ripgrep FAQ](https://github.com/BurntSushi/ripgrep/blob/master/FAQ.md)
 - 本次梳理的博客：`https://xiaolinnote.com/claudecode/source/cc_grep.html`
@@ -387,7 +545,7 @@ curl -s http://localhost:8080/metrics | grep request_total
 
 Claude Code 的 Grep 工具基于 ripgrep、支持 glob/type/multiline 并遵循 `.gitignore`，可由当前官方工具文档确认。默认过滤、并行搜索、排序影响和正则引擎边界可由 ripgrep 官方仓库确认。博客关于“不使用 RAG 的产品哲学”属于架构解读，不是 Anthropic 对内部索引实现的长期承诺；具体性能数字也高度依赖仓库、磁盘缓存、表达式和输出量。
 
-## 16. 复习检查问题
+## 17. 复习检查问题
 
 1. 为什么 `rg` 在代码仓库中的优势不仅是运行速度？
 2. `rg` 默认会跳过哪些路径或文件？
@@ -396,3 +554,5 @@ Claude Code 的 Grep 工具基于 ripgrep、支持 glob/type/multiline 并遵循
 5. 哪些场景下 `grep` 比 `rg` 更适合作为默认选择？
 6. 为什么 Claude Code 的代码检索不能简化为“一次 grep”？
 7. 哪些条件出现时，应在精确本地搜索之外增加混合 RAG？
+8. LSP 与语言服务器分别是什么？为什么不能把它们当作同一个具体程序？
+9. 哪些动态代码关系可能无法被 LSP 可靠解析，反而需要文本搜索补充？

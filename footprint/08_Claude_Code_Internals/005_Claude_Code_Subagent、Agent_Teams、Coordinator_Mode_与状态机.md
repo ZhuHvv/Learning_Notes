@@ -843,10 +843,10 @@ transcript 是可恢复上下文
 - `001_Claude_Code_Prompt_前缀缓存与三级上下文.md`
 - `002_Claude_Code_流式输出、max_tokens_与恢复机制.md`
 - `004_Claude_Code_上下文压缩、Microcompact_与状态恢复.md`
-- `../02_Agent_RAG_Memory/002_Agent_开发框架与选型.md`
-- `../02_Agent_RAG_Memory/006_Agent_的端到端任务能力.md`
-- `../02_Agent_RAG_Memory/007_MRKL、ReAct、ToT_与_Plan-and-Execute.md`
-- `../02_Agent_RAG_Memory/017_LangGraph_状态更新、invoke_与_stream.md`
+- `../02_Agent_RAG_Memory/010_Agent_开发框架与选型.md`
+- `../02_Agent_RAG_Memory/002_Agent_的端到端任务能力.md`
+- `../02_Agent_RAG_Memory/006_MRKL、ReAct、ToT_与_Plan-and-Execute.md`
+- `../02_Agent_RAG_Memory/011_LangGraph_状态更新、invoke_与_stream.md`
 
 ## 17. 参考资料与事实边界
 

@@ -190,7 +190,7 @@ Server 返回工具：
 
 ## 7. 与 LangChain 工具绑定的关系
 
-`@tool` 和 `bind_tools` 是 LangChain 对工具声明与模型绑定的框架封装，详见 `026_LangChain_@tool_与_bind_tools.md`。它们可以绑定本地函数，也可以由应用把 MCP 发现的 schema 转换后绑定；无论哪种方式，最终仍是“模型表达意图，应用执行工具”的闭环。
+`@tool` 和 `bind_tools` 是 LangChain 对工具声明与模型绑定的框架封装，详见 `004_LangChain_@tool_与_bind_tools.md`。它们可以绑定本地函数，也可以由应用把 MCP 发现的 schema 转换后绑定；无论哪种方式，最终仍是“模型表达意图，应用执行工具”的闭环。
 
 ## 8. 参考资料
 

@@ -1,8 +1,8 @@
 # RabbitMQ：vhost、exchange、queue、binding
 
-> 所属分类：Message Queue / RabbitMQ  
-> 修订版本：v9 昨日今日增量版  
-> 质量要求：本文件只解释本知识点，不复用其他知识点的原理段；示例尽量给出代码、伪代码、命令或配置。
+> 所属分类：Message Queue / RabbitMQ
+> 修订版本：v12
+> 知识边界：本文只建立 RabbitMQ 拓扑对象和基本消息路径；路由匹配见 `010`，可靠投递和队列类型见 `011`。
 
 ## 1. 总体性概念
 
@@ -139,8 +139,9 @@ queue 是否绑定到了目标 exchange？
 ## 8. 关联知识点
 
 - `010_Routing_Key_与_Binding_Key.md`
+- `011_RabbitMQ_可靠投递、消费确认与队列存储.md`
 - `012_RabbitMQ_延时队列：TTL、死信交换机与延时插件.md`
-- `014_RabbitMQ_Federation：联邦交换机与联邦队列.md`
+- `013_RabbitMQ_Federation：联邦交换机与联邦队列.md`
 
 ## 9. 复习检查问题
 

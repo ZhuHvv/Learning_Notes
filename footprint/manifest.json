@@ -1,10 +1,10 @@
 {
-    "version":  "v11_审查修订版+目录内独立编号+Claude_Code六篇博客核验增量",
-    "created_at":  "2026-07-26",
+    "version":  "v12_学习顺序重构版+MessageQueue知识聚类",
+    "created_at":  "2026-07-29",
     "base_version":  "v10_LLM_RAG评估增量版",
-    "knowledge_file_count":  109,
-    "markdown_file_count":  132,
-    "renumbered":  "当前知识库按 0x_分类目录独立维护文件序号；2026-07-21 将 02-07 目录的知识点文件改为各目录从 001 起连续编号，并新增 08 Claude Code 专题；2026-07-26 将该专题扩充至 001-007，并完成六篇源码博客的官方资料核验。",
+    "knowledge_file_count":  114,
+    "markdown_file_count":  138,
+    "renumbered":  "当前知识库按 0x_分类目录独立维护文件序号；2026-07-21 将 02-07 目录的知识点文件改为各目录从 001 起连续编号，并新增 08 Claude Code 专题；2026-07-26 将该专题扩充至 001-007；2026-07-29 将 06_MessageQueue 重排为通用基础、Kafka 连续链路、RabbitMQ 连续链路和综合选型。",
     "merged_in_v11":  [
                           {
                               "kept":  "01_LLM_Transformer/012_稠密向量、稀疏向量与多向量表示及检索.md",
@@ -21,12 +21,65 @@
                                                ]
                           },
                           {
-                              "kept":  "06_MessageQueue/085_RabbitMQ_延时队列：TTL、死信交换机与延时插件.md",
+                              "kept":  "06_MessageQueue/012_RabbitMQ_延时队列：TTL、死信交换机与延时插件.md",
                               "absorbed_old":  [
                                                    "084_RabbitMQ_TTL_过期检测、队列头阻塞与延时消息.md"
                                                ]
                           }
                       ],
+    "restructured_in_v12":  [
+                                {
+                                    "kept":  "06_MessageQueue/004_Kafka_Producer、Key、分区策略与热分区.md",
+                                    "absorbed_old":  [
+                                                         "007_Kafka_Key、分区策略与热分区.md",
+                                                         "003 中的 Producer 分区选择与 key 保序内容"
+                                                     ]
+                                },
+                                {
+                                    "kept":  "06_MessageQueue/005_Kafka_Leader_Follower、ISR、acks_与故障选举.md",
+                                    "absorbed_old":  [
+                                                         "005_Kafka_Leader_Follower_ISR_与故障选举.md",
+                                                         "003 中的副本复制、acks 与 leader 切换内容"
+                                                     ]
+                                },
+                                {
+                                    "kept":  "06_MessageQueue/006_Kafka_Consumer_Group、Offset_与_Rebalance.md",
+                                    "absorbed_old":  [
+                                                         "004_Kafka_Consumer_Group_与_Offset.md"
+                                                     ]
+                                },
+                                {
+                                    "kept":  "06_MessageQueue/007_Kafka_投递语义、重复消费与幂等处理.md",
+                                    "absorbed_old":  [
+                                                         "008_Kafka_消息分发、多消费者语义与幂等处理.md",
+                                                         "004 中的重复消费与幂等示例"
+                                                     ]
+                                },
+                                {
+                                    "kept":  "06_MessageQueue/008_Kafka_重试机制、Retry_Topic_与死信队列.md",
+                                    "absorbed_old":  [
+                                                         "006_Kafka_重试机制、Retry_Topic_与死信队列.md"
+                                                     ]
+                                },
+                                {
+                                    "kept":  "06_MessageQueue/011_RabbitMQ_可靠投递、消费确认与队列存储.md",
+                                    "absorbed_old":  [
+                                                         "013_RabbitMQ_惰性队列：磁盘优先与消费定位.md"
+                                                     ]
+                                },
+                                {
+                                    "kept":  "06_MessageQueue/013_RabbitMQ_Federation：联邦交换机与联邦队列.md",
+                                    "absorbed_old":  [
+                                                         "014_RabbitMQ_Federation：联邦交换机与联邦队列.md"
+                                                     ]
+                                },
+                                {
+                                    "kept":  "06_MessageQueue/014_Kafka_vs_RabbitMQ：事件流、业务路由与选型.md",
+                                    "absorbed_old":  [
+                                                         "011_Kafka_vs_RabbitMQ：事件流与业务路由.md"
+                                                     ]
+                                }
+                            ],
     "deleted_in_v11":  [
                            "033_日志追加写入与调试输出.md（旧编号）",
                            "079_Kafka_Docker_Compose_与_volume_路径问题.md（旧编号）",
@@ -45,8 +98,8 @@
                   },
                   {
                       "path":  "00_覆盖清单.md",
-                      "size":  9029,
-                      "sha256":  "f0d1219ff0e5e5e7"
+                      "size":  10121,
+                      "sha256":  "a7b93e7a9310cd5b"
                   },
                   {
                       "path":  "00_后端服务运行时关系图.md",
@@ -60,18 +113,18 @@
                   },
                   {
                       "path":  "00_质量检查报告.md",
-                      "size":  1488,
-                      "sha256":  "de1707fd80b08c3a"
+                      "size":  1494,
+                      "sha256":  "6434911a3686bacf"
                   },
                   {
                       "path":  "00_总体索引.md",
-                      "size":  17993,
-                      "sha256":  "d391235ee7b3b616"
+                      "size":  20298,
+                      "sha256":  "18e95184d436aabe"
                   },
                   {
                       "path":  "00_总体知识网络图.md",
-                      "size":  3218,
-                      "sha256":  "fbd752ce46c8a433"
+                      "size":  3489,
+                      "sha256":  "0672e2c207f7971f"
                   },
                   {
                       "path":  "01_LLM_Transformer/001_Transformer_的作用：从_token_序列到上下文向量.md",
@@ -151,57 +204,57 @@
                   {
                       "path":  "02_Agent_RAG_Memory/001_Prompt_工程：User_Prompt_与_System_Prompt.md",
                       "size":  4749,
-                      "sha256":  "03c17f724e736a78"
+                      "sha256":  "ae3e9af3119ab7d5"
                   },
                   {
-                      "path":  "02_Agent_RAG_Memory/002_Agent_开发框架与选型.md",
-                      "size":  14620,
-                      "sha256":  "e515b66b620e99f8"
+                      "path":  "02_Agent_RAG_Memory/002_Agent_的端到端任务能力.md",
+                      "size":  5408,
+                      "sha256":  "147ab2359e999d14"
                   },
                   {
                       "path":  "02_Agent_RAG_Memory/003_Function_Calling_与_MCP_工具接入.md",
                       "size":  7033,
-                      "sha256":  "7cc265bd2b13537d"
+                      "sha256":  "a541ec190c463afd"
                   },
                   {
-                      "path":  "02_Agent_RAG_Memory/004_Agent_Skills_模块化能力扩展.md",
-                      "size":  2188,
-                      "sha256":  "528d1a9f03e32060"
+                      "path":  "02_Agent_RAG_Memory/004_LangChain_@tool_与_bind_tools.md",
+                      "size":  2874,
+                      "sha256":  "4b0d808e1f237d55"
                   },
                   {
-                      "path":  "02_Agent_RAG_Memory/005_深度学习基础：回归、梯度下降与评估指标.md",
-                      "size":  5839,
-                      "sha256":  "fea7c62abacef3e6"
+                      "path":  "02_Agent_RAG_Memory/005_Agent_Skills_模块化能力扩展.md",
+                      "size":  2291,
+                      "sha256":  "52b4878a611c5db7"
                   },
                   {
-                      "path":  "02_Agent_RAG_Memory/006_Agent_的端到端任务能力.md",
-                      "size":  5408,
-                      "sha256":  "2f5e19d78ea0935e"
-                  },
-                  {
-                      "path":  "02_Agent_RAG_Memory/007_MRKL、ReAct、ToT_与_Plan-and-Execute.md",
+                      "path":  "02_Agent_RAG_Memory/006_MRKL、ReAct、ToT_与_Plan-and-Execute.md",
                       "size":  7981,
-                      "sha256":  "516f6f663aedb04d"
+                      "sha256":  "6bdea032020b3b7c"
                   },
                   {
-                      "path":  "02_Agent_RAG_Memory/008_Reflection、Insight_与执行后反思.md",
-                      "size":  5966,
-                      "sha256":  "80efe2a45452ff76"
+                      "path":  "02_Agent_RAG_Memory/007_Extended_Thinking_与_ReAct_推理范式对比.md",
+                      "size":  8350,
+                      "sha256":  "abea348584222994"
                   },
                   {
-                      "path":  "02_Agent_RAG_Memory/009_ReAct_提前终止检测.md",
+                      "path":  "02_Agent_RAG_Memory/008_ReAct_提前终止检测.md",
                       "size":  2702,
                       "sha256":  "d7055bce91cb88b1"
                   },
                   {
-                      "path":  "02_Agent_RAG_Memory/010_重复检测、语义缓存与_Best-of-n_采样.md",
+                      "path":  "02_Agent_RAG_Memory/009_重复检测、语义缓存与_Best-of-n_采样.md",
                       "size":  2638,
                       "sha256":  "baed735f905295ba"
                   },
                   {
-                      "path":  "02_Agent_RAG_Memory/011_IterResearch、Research_Synthesis_与常量大小上下文.md",
-                      "size":  6552,
-                      "sha256":  "740d9b0bb1a352c7"
+                      "path":  "02_Agent_RAG_Memory/010_Agent_开发框架与选型.md",
+                      "size":  14620,
+                      "sha256":  "6c1d87b727dc2862"
+                  },
+                  {
+                      "path":  "02_Agent_RAG_Memory/011_LangGraph_状态更新、invoke_与_stream.md",
+                      "size":  6209,
+                      "sha256":  "abc3b02961f05880"
                   },
                   {
                       "path":  "02_Agent_RAG_Memory/012_Agent_Memory_四类：短期、情景、语义、程序性.md",
@@ -209,69 +262,69 @@
                       "sha256":  "5c19d3c13adaa849"
                   },
                   {
-                      "path":  "02_Agent_RAG_Memory/013_Generative_Agents_的记忆与反思机制.md",
-                      "size":  8570,
-                      "sha256":  "57ba087db0782c0e"
+                      "path":  "02_Agent_RAG_Memory/013_Reflection、Insight_与执行后反思.md",
+                      "size":  5966,
+                      "sha256":  "1038e9bc3189d4cd"
                   },
                   {
-                      "path":  "02_Agent_RAG_Memory/014_MemGPT：上下文窗口作为有限内存.md",
+                      "path":  "02_Agent_RAG_Memory/014_Generative_Agents_的记忆与反思机制.md",
+                      "size":  8569,
+                      "sha256":  "e23dec183d371f4f"
+                  },
+                  {
+                      "path":  "02_Agent_RAG_Memory/015_MemGPT：上下文窗口作为有限内存.md",
                       "size":  5223,
-                      "sha256":  "3ba34fad298d10af"
+                      "sha256":  "74819b99a14c401c"
                   },
                   {
-                      "path":  "02_Agent_RAG_Memory/015_Mem0_与_A-Mem：生产级长期记忆管理.md",
+                      "path":  "02_Agent_RAG_Memory/016_IterResearch、Research_Synthesis_与常量大小上下文.md",
+                      "size":  6552,
+                      "sha256":  "29316f492c3ac625"
+                  },
+                  {
+                      "path":  "02_Agent_RAG_Memory/017_Mem0_与_A-Mem：生产级长期记忆管理.md",
                       "size":  3565,
                       "sha256":  "3558068cf0a595ce"
                   },
                   {
-                      "path":  "02_Agent_RAG_Memory/016_RAG_完整链路：召回、融合、重排、生成.md",
-                      "size":  9572,
-                      "sha256":  "958f10c4a52ed481"
-                  },
-                  {
-                      "path":  "02_Agent_RAG_Memory/017_LangGraph_状态更新、invoke_与_stream.md",
-                      "size":  6209,
-                      "sha256":  "abc3b02961f05880"
-                  },
-                  {
-                      "path":  "02_Agent_RAG_Memory/018_LangChain_@tool_与_bind_tools.md",
-                      "size":  2874,
-                      "sha256":  "4b0d808e1f237d55"
+                      "path":  "02_Agent_RAG_Memory/018_RAG_完整链路：召回、融合、重排、生成.md",
+                      "size":  9701,
+                      "sha256":  "250b049712d59a54"
                   },
                   {
                       "path":  "02_Agent_RAG_Memory/019_RAG_Query_Rewrite_查询改写.md",
                       "size":  8427,
-                      "sha256":  "d63dee868cc09e5f"
+                      "sha256":  "c39dfc7bf2c17d18"
                   },
                   {
                       "path":  "02_Agent_RAG_Memory/020_RAG_HyDE_假设文档嵌入.md",
-                      "size":  8827,
-                      "sha256":  "efe92844618d5bd2"
+                      "size":  8970,
+                      "sha256":  "2706b2157d82e395"
                   },
                   {
                       "path":  "02_Agent_RAG_Memory/021_RAG_Multi-Query_Expansion_多查询扩展.md",
-                      "size":  8179,
-                      "sha256":  "52b7eebc2a39276b"
+                      "size":  8302,
+                      "sha256":  "03ea9bcefe95178a"
                   },
                   {
                       "path":  "02_Agent_RAG_Memory/022_Query_Rewrite、HyDE_与_Multi-Query_对比.md",
-                      "size":  8042,
-                      "sha256":  "0069199dc628e622"
+                      "size":  8120,
+                      "sha256":  "9bd6c0a3e620e43a"
                   },
                   {
                       "path":  "02_Agent_RAG_Memory/023_RAGAS_评估指标与_Ground_Truth_来源.md",
-                      "size":  9405,
-                      "sha256":  "d1046a54bf2d1b85"
-                  },
-                  {
-                      "path":  "02_Agent_RAG_Memory/024_Extended_Thinking_与_ReAct_推理范式对比.md",
-                      "size":  8350,
-                      "sha256":  "570276bafaf0dac5"
+                      "size":  9543,
+                      "sha256":  "bd1080a4e3001423"
                   },
                   {
                       "path":  "02_Agent_RAG_Memory/README.md",
-                      "size":  2764,
-                      "sha256":  "6fe81d48b14db2c0"
+                      "size":  3204,
+                      "sha256":  "24101e1d2814bbe3"
+                  },
+                  {
+                      "path":  "02_Agent_RAG_Memory/附_深度学习基础：回归、梯度下降与评估指标.md",
+                      "size":  5839,
+                      "sha256":  "fea7c62abacef3e6"
                   },
                   {
                       "path":  "02_Agent_RAG_Memory/附_通用学习与排查模板.md",
@@ -279,54 +332,84 @@
                       "sha256":  "aa7d04013bfb403f"
                   },
                   {
-                      "path":  "03_Python/001_async___await_与协程调度.md",
-                      "size":  6630,
-                      "sha256":  "2d924e71a72461a4"
+                      "path":  "03_Python/001_Conda、pip、Python_路径与包导入.md",
+                      "size":  3696,
+                      "sha256":  "2f587daa64c34c13"
                   },
                   {
-                      "path":  "03_Python/002_@asynccontextmanager_与_yield_生命周期.md",
-                      "size":  3162,
-                      "sha256":  "d845112ec71b0bd1"
+                      "path":  "03_Python/002_Python_标准输入、split、map_与_range.md",
+                      "size":  4740,
+                      "sha256":  "47ccf8916353096c"
                   },
                   {
-                      "path":  "03_Python/003_asyncio.wait、done_pending_与_FIRST_COMPLETED.md",
-                      "size":  2207,
-                      "sha256":  "897c528d6eb9a515"
+                      "path":  "03_Python/003_可变默认参数、容器修改与复制语义.md",
+                      "size":  3707,
+                      "sha256":  "3ec1797147587245"
                   },
                   {
-                      "path":  "03_Python/004_FastAPI_UploadFile：流式读取_vs_bytes.md",
-                      "size":  6155,
-                      "sha256":  "30672462aec4e0c4"
+                      "path":  "03_Python/004_dataclass、TypedDict_与_Pydantic.md",
+                      "size":  3523,
+                      "sha256":  "d1201b63c1bf0ebb"
                   },
                   {
-                      "path":  "03_Python/005_可变默认参数与_default_factory.md",
-                      "size":  6382,
-                      "sha256":  "12687439595d81b1"
+                      "path":  "03_Python/005_JSON、XML_与正则提取.md",
+                      "size":  5324,
+                      "sha256":  "419fa120ec102f43"
                   },
                   {
-                      "path":  "03_Python/006_JSON、XML_与正则提取.md",
-                      "size":  5328,
-                      "sha256":  "cbe52bb9d3692e5d"
+                      "path":  "03_Python/006_pandas_与实验日志数据处理.md",
+                      "size":  3085,
+                      "sha256":  "a37dd52c4329b41c"
                   },
                   {
-                      "path":  "03_Python/007_pandas_与实验_日志数据处理.md",
-                      "size":  1806,
-                      "sha256":  "72002904bb8ead71"
+                      "path":  "03_Python/007_async、await_与协程调度.md",
+                      "size":  3276,
+                      "sha256":  "9607a53221c1fad8"
                   },
                   {
-                      "path":  "03_Python/008_Conda、pip、Python_路径与依赖隔离.md",
-                      "size":  1913,
-                      "sha256":  "0273a37bd90fc694"
+                      "path":  "03_Python/008_Task_聚合、取消、超时与_asyncio.wait.md",
+                      "size":  5192,
+                      "sha256":  "1aa970c3b148ff16"
+                  },
+                  {
+                      "path":  "03_Python/009_Semaphore、Queue_与异步背压.md",
+                      "size":  4438,
+                      "sha256":  "cf53f5343d30dd6b"
+                  },
+                  {
+                      "path":  "03_Python/010_异步生成器、asynccontextmanager_与_yield_生命周期.md",
+                      "size":  3515,
+                      "sha256":  "35bba6feca0b95bd"
+                  },
+                  {
+                      "path":  "03_Python/011_FastAPI_请求参数、Depends_与生命周期.md",
+                      "size":  3893,
+                      "sha256":  "cc6dd18da47bfe3f"
+                  },
+                  {
+                      "path":  "03_Python/012_FastAPI_UploadFile、File_与_Form.md",
+                      "size":  4096,
+                      "sha256":  "405b61903dfd79f1"
+                  },
+                  {
+                      "path":  "03_Python/013_FastAPI_BackgroundTasks_与可靠任务边界.md",
+                      "size":  3206,
+                      "sha256":  "15a82fffe5f2ff8b"
+                  },
+                  {
+                      "path":  "03_Python/014_状态模型、ORM、JSONB_与持久化边界.md",
+                      "size":  4392,
+                      "sha256":  "60b2fb734a67835c"
                   },
                   {
                       "path":  "03_Python/README.md",
-                      "size":  1008,
-                      "sha256":  "1caa26a259510cb3"
+                      "size":  3088,
+                      "sha256":  "ba031f48140483e4"
                   },
                   {
                       "path":  "03_Python/附_通用学习与排查模板.md",
-                      "size":  3557,
-                      "sha256":  "c87f14c8068f803c"
+                      "size":  4628,
+                      "sha256":  "8eae2f4ace89b45e"
                   },
                   {
                       "path":  "04_Go/001_Go_后端开发技术栈总览.md",
@@ -515,83 +598,83 @@
                   },
                   {
                       "path":  "06_MessageQueue/001_消息队列的核心概念：生产者、队列、消费者、消息分发.md",
-                      "size":  2054,
-                      "sha256":  "5b38adeee0fdbc27"
+                      "size":  2830,
+                      "sha256":  "6279e18224398793"
                   },
                   {
                       "path":  "06_MessageQueue/002_流量削峰、异步解耦与最终一致性.md",
-                      "size":  1955,
-                      "sha256":  "fdb7e95ce074a88e"
+                      "size":  2963,
+                      "sha256":  "c62301eefa4e5df4"
                   },
                   {
                       "path":  "06_MessageQueue/003_Kafka：KRaft、Broker、Topic、Partition、Replica.md",
-                      "size":  9684,
-                      "sha256":  "4fa63ca1b9b22f5b"
+                      "size":  6746,
+                      "sha256":  "a3352b36fe18cb41"
                   },
                   {
-                      "path":  "06_MessageQueue/004_Kafka_Consumer_Group_与_Offset.md",
-                      "size":  8020,
-                      "sha256":  "c355cc52f40e6199"
+                      "path":  "06_MessageQueue/004_Kafka_Producer、Key、分区策略与热分区.md",
+                      "size":  5692,
+                      "sha256":  "dbc83622491800ef"
                   },
                   {
-                      "path":  "06_MessageQueue/005_Kafka_Leader_Follower_ISR_与故障选举.md",
-                      "size":  6682,
-                      "sha256":  "0fefa5fe1cbbc81a"
+                      "path":  "06_MessageQueue/005_Kafka_Leader_Follower、ISR、acks_与故障选举.md",
+                      "size":  7110,
+                      "sha256":  "1a126d60403f4c8b"
                   },
                   {
-                      "path":  "06_MessageQueue/006_Kafka_重试机制、Retry_Topic_与死信队列.md",
-                      "size":  7066,
-                      "sha256":  "fb9072985719a779"
+                      "path":  "06_MessageQueue/006_Kafka_Consumer_Group、Offset_与_Rebalance.md",
+                      "size":  5466,
+                      "sha256":  "48045da9bdddb43b"
                   },
                   {
-                      "path":  "06_MessageQueue/007_Kafka_Key、分区策略与热分区.md",
-                      "size":  6002,
-                      "sha256":  "785baf5fd97f5aa4"
+                      "path":  "06_MessageQueue/007_Kafka_投递语义、重复消费与幂等处理.md",
+                      "size":  5615,
+                      "sha256":  "7ed16d407f486fbc"
                   },
                   {
-                      "path":  "06_MessageQueue/008_Kafka_消息分发、多消费者语义与幂等处理.md",
-                      "size":  6122,
-                      "sha256":  "3b84f4f758386ea0"
+                      "path":  "06_MessageQueue/008_Kafka_重试机制、Retry_Topic_与死信队列.md",
+                      "size":  6780,
+                      "sha256":  "98a9259f1d299bbb"
                   },
                   {
                       "path":  "06_MessageQueue/009_RabbitMQ：vhost、exchange、queue、binding.md",
-                      "size":  5579,
-                      "sha256":  "22e5beb75e391144"
+                      "size":  5612,
+                      "sha256":  "36ff883198aa6ae8"
                   },
                   {
                       "path":  "06_MessageQueue/010_Routing_Key_与_Binding_Key.md",
-                      "size":  5227,
-                      "sha256":  "922dc07148a21d3c"
+                      "size":  5249,
+                      "sha256":  "2fc437687b275855"
                   },
                   {
-                      "path":  "06_MessageQueue/011_Kafka_vs_RabbitMQ：事件流与业务路由.md",
-                      "size":  2663,
-                      "sha256":  "5eb002255a2dfac8"
+                      "path":  "06_MessageQueue/011_RabbitMQ_可靠投递、消费确认与队列存储.md",
+                      "size":  10145,
+                      "sha256":  "17851618ccb101d3"
                   },
                   {
                       "path":  "06_MessageQueue/012_RabbitMQ_延时队列：TTL、死信交换机与延时插件.md",
-                      "size":  11935,
-                      "sha256":  "aa2e2c3c7e6d3a49"
+                      "size":  12744,
+                      "sha256":  "ae2d884d923d1890"
                   },
                   {
-                      "path":  "06_MessageQueue/013_RabbitMQ_惰性队列：磁盘优先与消费定位.md",
-                      "size":  6621,
-                      "sha256":  "c4fe5e7a1f51321d"
+                      "path":  "06_MessageQueue/013_RabbitMQ_Federation：联邦交换机与联邦队列.md",
+                      "size":  6101,
+                      "sha256":  "a97d10797e5c1959"
                   },
                   {
-                      "path":  "06_MessageQueue/014_RabbitMQ_Federation：联邦交换机与联邦队列.md",
-                      "size":  5954,
-                      "sha256":  "99e5d78ee9faf87a"
+                      "path":  "06_MessageQueue/014_Kafka_vs_RabbitMQ：事件流、业务路由与选型.md",
+                      "size":  6190,
+                      "sha256":  "6e0ccf89769dd97a"
                   },
                   {
                       "path":  "06_MessageQueue/README.md",
-                      "size":  1804,
-                      "sha256":  "1077481dcd2e708e"
+                      "size":  4298,
+                      "sha256":  "aca1d36e02ca99a8"
                   },
                   {
                       "path":  "06_MessageQueue/附_通用学习与排查模板.md",
-                      "size":  4000,
-                      "sha256":  "b7fd5df71b1752b7"
+                      "size":  4111,
+                      "sha256":  "1dd0346fa1d38c43"
                   },
                   {
                       "path":  "07_Backend_Deploy_Network/001_RESTful_API、持久化服务与微服务.md",
@@ -695,8 +778,8 @@
                   },
                   {
                       "path":  "README.md",
-                      "size":  1698,
-                      "sha256":  "d53576c97200009f"
+                      "size":  1878,
+                      "sha256":  "7b85eb7c7d038a35"
                   }
               ],
     "increment_2026_07_21":  [

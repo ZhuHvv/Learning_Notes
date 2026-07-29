@@ -262,7 +262,7 @@ Prompt Cache 要求前缀稳定，因此 Claude Code 的多项公开行为都采
 - `../01_LLM_Transformer/003_Q_K_V_注意力机制.md`
 - `../01_LLM_Transformer/007_Causal_Mask、自回归生成与_KV_Cache.md`
 - `../02_Agent_RAG_Memory/001_Prompt_工程：User_Prompt_与_System_Prompt.md`
-- `../02_Agent_RAG_Memory/004_Agent_Skills_模块化能力扩展.md`
+- `../02_Agent_RAG_Memory/005_Agent_Skills_模块化能力扩展.md`
 - `002_Claude_Code_流式输出、max_tokens_与恢复机制.md`
 - `003_Claude_Code_代码检索：ripgrep_与_grep.md`
 - `004_Claude_Code_上下文压缩、Microcompact_与状态恢复.md`

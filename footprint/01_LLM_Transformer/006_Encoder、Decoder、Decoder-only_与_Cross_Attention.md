@@ -1,12 +1,14 @@
 # Encoder、Decoder、Decoder-only 与 Cross Attention
 
 > 所属分类：LLM / Transformer  
-> 修订版本：v9 昨日今日增量版  
+> 修订版本：v12 学习顺序审查版
 > 质量要求：本文件只解释本知识点，不复用其他知识点的原理段；示例尽量给出代码、伪代码、命令或配置。
 
 ## 1. 总体性概念
 
 Encoder 适合双向理解，Decoder 适合自回归生成，Decoder-only 是主流生成式大模型架构；Cross Attention 是 decoder 查询 encoder 输出的机制。
+
+这里描述的是典型用途而不是硬性边界：Embedding 模型也可以由 decoder-only LLM 改造，具体表示方式见 [010：稠密向量、稀疏向量与多向量表示及检索](010_稠密向量、稀疏向量与多向量表示及检索.md)。
 
 
 ## 2. 原理性解释
@@ -67,4 +69,3 @@ context = attention(Q, K, V)
 ## 6. 你在讨论中的理解推进
 
 你困惑 decoder 训练和使用是否区分、如何预测下一个 token；答案是训练学 next-token，推理自回归展开。
-

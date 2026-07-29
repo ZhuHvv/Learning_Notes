@@ -1,8 +1,8 @@
 # Routing Key 与 Binding Key
 
-> 所属分类：Message Queue / RabbitMQ  
-> 修订版本：v9 昨日今日增量版  
-> 质量要求：本文件只解释本知识点，不复用其他知识点的原理段；示例尽量给出代码、伪代码、命令或配置。
+> 所属分类：Message Queue / RabbitMQ
+> 修订版本：v12
+> 知识边界：本文只解释 exchange 如何匹配 routing key 与 binding key；确认、持久化和消费失败见 `011`。
 
 ## 1. 总体性概念
 
@@ -164,8 +164,9 @@ binding key   = ?
 ## 8. 关联知识点
 
 - `009_RabbitMQ：vhost、exchange、queue、binding.md`
+- `011_RabbitMQ_可靠投递、消费确认与队列存储.md`
 - `012_RabbitMQ_延时队列：TTL、死信交换机与延时插件.md`
-- `014_RabbitMQ_Federation：联邦交换机与联邦队列.md`
+- `013_RabbitMQ_Federation：联邦交换机与联邦队列.md`
 
 ## 9. 复习检查问题
 

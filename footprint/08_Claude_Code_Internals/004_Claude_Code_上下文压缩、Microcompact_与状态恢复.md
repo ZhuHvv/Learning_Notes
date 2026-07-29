@@ -335,9 +335,9 @@ Claude API 已公开服务端 Compaction 与 Context Editing。这些能力证�
 - `003_Claude_Code_代码检索：ripgrep_与_grep.md`
 - `006_Claude_Code_Agent_Loop、Query_生命周期与工具编排.md`
 - `007_Claude_Code_记忆体系：CLAUDE.md、Rules_与_Auto_Memory.md`
-- `../02_Agent_RAG_Memory/006_Agent_的端到端任务能力.md`
+- `../02_Agent_RAG_Memory/002_Agent_的端到端任务能力.md`
 - `../02_Agent_RAG_Memory/012_Agent_Memory_四类：短期、情景、语义、程序性.md`
-- `../02_Agent_RAG_Memory/014_MemGPT：上下文窗口作为有限内存.md`
+- `../02_Agent_RAG_Memory/015_MemGPT：上下文窗口作为有限内存.md`
 
 ## 16. 参考资料与事实边界
 

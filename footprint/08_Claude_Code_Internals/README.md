@@ -1,10 +1,10 @@
 # Claude Code 源码与机制解读
 
-本专题从 Agent Harness 工程视角理解 Claude Code，重点关注 Agent Loop、上下文组织、Prompt Cache、代码检索、流式协议、输出上限、上下文压缩、状态恢复、项目记忆、Subagent 通信与 Agent Teams。
+本专题从 Agent Harness 工程视角理解 Claude Code，重点关注 Agent Loop、上下文组织、Prompt Cache、代码检索、Skills、流式协议、输出上限、上下文压缩、状态恢复、项目记忆、Subagent 通信与 Agent Teams。
 
-知识点文件数：7
+知识点文件数：8
 
-> 审查基线：2026-07-26；Claude Code 最新公开发行版为 v2.1.220。
+> 审查基线：2026-07-29；产品默认值、配置名和版本条件以 Anthropic 当前官方文档为准。
 > 版本事实优先依据 Anthropic 官方文档、官方 GitHub release feed 与官方 Agent SDK 类型；第三方 source map / 反编译仅用于解释特定构建。
 
 ## 文件列表
@@ -16,6 +16,7 @@
 - [Claude Code Subagent、Agent Teams、Coordinator Mode 与状态机](005_Claude_Code_Subagent、Agent_Teams、Coordinator_Mode_与状态机.md)
 - [Claude Code Agent Loop、Query 生命周期与工具编排](006_Claude_Code_Agent_Loop、Query_生命周期与工具编排.md)
 - [Claude Code 记忆体系：CLAUDE.md、Rules 与 Auto Memory](007_Claude_Code_记忆体系：CLAUDE.md、Rules_与_Auto_Memory.md)
+- [Claude Code Skills：发现预算、调用控制与安全边界](008_Claude_Code_Skills：发现预算、调用控制与安全边界.md)
 
 ## 建议阅读顺序
 
@@ -26,6 +27,7 @@
   ├─ 002 流式与恢复：理解单次模型响应怎样收尾
   ├─ 004 上下文压缩：理解长循环怎样控制上下文
   ├─ 007 Memory：理解跨会话知识怎样加载和校验
+  ├─ 008 Skills：理解按需能力怎样发现、调用和强制约束
   └─ 005 Multi-Agent：理解一个循环怎样委派给其它循环
 ```
 

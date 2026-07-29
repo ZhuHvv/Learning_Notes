@@ -1,29 +1,43 @@
-# Go / Gin / 服务端工程
+# Go 学习目录
 
-Go 后端、并发、运行时、gRPC 与 Protobuf。
+按文件编号顺序阅读。编号同时表达前置关系和难度变化：基础语义 → Web 工程 → 并发 → Runtime → RPC → 流式与 AI 应用。
 
-知识点文件数：19
+## 01｜语言与工程基础
 
-## 文件列表
+- [001 Go Module、包与导入路径](001_Go_Module、包与导入路径.md)
+- [002 Go 接口、方法集与指针接收器](002_Go_接口、方法集与指针接收器.md)
+- [003 Go 错误处理：error、panic 与 recover](003_Go_错误处理：error、panic_与_recover.md)
 
-- [Go 后端开发技术栈总览](001_Go_后端开发技术栈总览.md)
-- [Gin Handler 闭包与依赖注入](002_Gin_Handler_闭包与依赖注入.md)
-- [Gin BasicAuth、Middleware 与 Session Cookie](003_Gin_BasicAuth、Middleware_与_Session_Cookie.md)
-- [Go Context：取消、超时与值传递](004_Go_Context：取消、超时与值传递.md)
-- [Go GC：三色标记与混合写屏障](005_Go_GC：三色标记与混合写屏障.md)
-- [逃逸分析、闭包与内存泄露](006_逃逸分析、闭包与内存泄露.md)
-- [Go 内存三级缓存：mcache、mcentral、mheap、span](007_Go_内存三级缓存：mcache、mcentral、mheap、span.md)
-- [GoFrame g.Meta 与声明式路由绑定](008_GoFrame_g.Meta_与声明式路由绑定.md)
-- [Go SSE：text event-stream 与流式响应](009_Go_SSE：text_event-stream_与流式响应.md)
-- [Eino：组件化 RAG   Agent 编排](010_Eino：组件化_RAG___Agent_编排.md)
-- [Go error、panic 与 recover](011_Go_error、panic_与_recover.md)
-- [Goroutine 数量、调度与性能边界](012_Goroutine_数量、调度与性能边界.md)
-- [Channel 关闭、只读通道与 select 读就绪](013_Channel_关闭、只读通道与_select_读就绪.md)
-- [sync.Mutex Lock、TryLock 与锁模型](014_sync.Mutex_Lock、TryLock_与锁模型.md)
-- [Go 异步机制：goroutine、channel、select 与 Context](015_Go_异步机制：goroutine、channel、select_与_Context.md)
-- [Go Module、package 与 import 路径](016_Go_Module、package_与_import_路径.md)
-- [Protobuf go_package、生成路径与 proto 文件组织](017_Protobuf_go_package、生成路径与_proto_文件组织.md)
-- [Go 接口实现、方法集与指针接收器](018_Go_接口实现、方法集与指针接收器.md)
-- [gRPC RegisterServer、UnimplementedServer 与接口实现](019_gRPC_RegisterServer、UnimplementedServer_与接口实现.md)
+## 02｜Web 工程
 
-另有：[附_通用学习与排查模板](附_通用学习与排查模板.md)——v11 从本目录各文件抽取的共用模板段，正文中不再重复。
+- [004 Gin Handler：闭包与依赖注入](004_Gin_Handler：闭包与依赖注入.md)
+- [005 Gin Middleware：BasicAuth、Session 与 Cookie](005_Gin_Middleware：BasicAuth、Session_与_Cookie.md)
+- [006 GoFrame g.Meta：声明式路由绑定](006_GoFrame_g.Meta：声明式路由绑定.md)
+
+## 03｜并发模型
+
+- [007 Go 并发模型：goroutine、channel、select 与 Context](007_Go_并发模型：goroutine、channel、select_与_Context.md)
+- [008 Goroutine：数量、调度与性能边界](008_Goroutine：数量、调度与性能边界.md)
+- [009 Channel：关闭、方向限制与 select 读就绪](009_Channel：关闭、方向限制与_select_读就绪.md)
+- [010 Go Context：请求取消、超时与值传递](010_Go_Context：请求取消、超时与值传递.md)
+- [011 sync.Mutex：Lock、TryLock 与锁模型](011_sync.Mutex：Lock、TryLock_与锁模型.md)
+
+## 04｜Runtime 与内存
+
+- [012 Go 逃逸分析、闭包与内存泄漏](012_Go_逃逸分析、闭包与内存泄漏.md)
+- [013 Go 内存分配器：mcache、mcentral、mheap 与 mspan](013_Go_内存分配器：mcache、mcentral、mheap_与_mspan.md)
+- [014 Go GC：三色标记、混合写屏障与 Green Tea](014_Go_GC：三色标记、混合写屏障与_Green_Tea.md)
+
+## 05｜Protobuf 与 gRPC
+
+- [015 Protobuf Go 代码生成：go_package、输出路径与文件组织](015_Protobuf_Go_代码生成：go_package、输出路径与文件组织.md)
+- [016 gRPC 服务注册：RegisterServer、UnimplementedServer 与接口实现](016_gRPC_服务注册：RegisterServer、UnimplementedServer_与接口实现.md)
+
+## 06｜流式与 AI 应用
+
+- [017 Go SSE：text/event-stream 与流式响应](017_Go_SSE：text_event-stream_与流式响应.md)
+- [018 Eino：RAG、Graph 与 Agent 编排](018_Eino：RAG、Graph_与_Agent_编排.md)
+
+## 附录
+
+- [通用学习与排查方法](附_通用学习与排查方法.md)

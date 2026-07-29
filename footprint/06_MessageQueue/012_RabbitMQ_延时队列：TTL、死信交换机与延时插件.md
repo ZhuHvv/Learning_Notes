@@ -1,15 +1,15 @@
 # RabbitMQ 延时队列：TTL、死信交换机与延时插件
 
-> 所属分类：Message Queue / RabbitMQ  
-> 修订版本：v11（合并原《RabbitMQ TTL 过期检测、队列头阻塞与延时消息》一篇，并更新延时插件现状）  
-> 质量要求：本文件只解释本知识点，不复用其他知识点的原理段；示例尽量给出代码、伪代码、命令或配置。
+> 所属分类：Message Queue / RabbitMQ
+> 修订版本：v12（合并 TTL 过期、队头阻塞、DLX 与延时方案，并更新插件现状）
+> 知识边界：本文建立在 `010` 的路由规则和 `011` 的可靠投递、ACK/DLX 基础上。
 
 ## 1. 总体性概念
 
 RabbitMQ 原生队列不是专门的定时任务系统，实现延时消息的常见思路有：
 
 1. **TTL + 死信交换机（DLX）**：消息先进入延时队列，过期后成为死信，再被路由到真正的业务队列。这是当前 RabbitMQ 上的首选原生方案，通常按延时等级拆分多个队列。
-2. **延时消息插件（历史方案）**：使用 `x-delayed-message` exchange，把延时时间作为消息属性交给插件调度。**注意：官方 rabbitmq-delayed-message-exchange 插件仓库已于 2026-01 归档、不再维护；其依赖的 Mnesia 在 RabbitMQ 4.3 中已被移除，4.3+ 无法使用官方插件。** 仅在旧版本（≤4.2）存量系统中还能见到。
+2. **延时消息插件（历史方案）**：使用 `x-delayed-message` exchange，把延时时间作为消息属性交给插件调度。**注意：官方 rabbitmq-delayed-message-exchange 插件仓库已于 2026-04-16 归档、不再维护；其依赖的 Mnesia 在 RabbitMQ 4.3 开发周期中被移除，4.3+ 无法使用官方插件。** 仅在旧版本（≤4.2）存量系统中还能见到。
 3. **外部调度**：延时任务表 + 定时扫描、Redis ZSet 调度等，到期后再投递到 RabbitMQ。适合大量不同延时、高精度或大规模定时场景。
 
 TTL + 死信队列的基本思路：消息到达队列 TTL 或消息 TTL 后，被转发到死信交换机，再进入特定业务队列供消费者消费。
@@ -49,14 +49,14 @@ RabbitMQ 支持两类 TTL：
 
 如果队列中每条延时消息 TTL 都不同，是否每条消息都需要单独检测？是不是每条消息都有一个独立计时器？
 
-答案是：**通常不是每条消息一个独立系统计时器。** 每条消息确实可以有自己的过期时间，但这不意味着 broker 为每条消息创建一个操作系统计时器。更常见的方式是：
+答案是：**通常不是每条消息一个独立操作系统计时器。** 消息会记录 TTL/过期信息，但普通队列的过期清理与队列顺序密切相关：
 
-- 消息写入时记录过期时间；
-- 队列准备投递或扫描某些位置时检查是否到期；
-- 到期后将消息丢弃或 dead-letter；
-- 对普通 FIFO 队列，队头消息的状态会显著影响后续消息。
+- RabbitMQ 保证过期消息不会再交给消费者；
+- Quorum Queue 在过期消息到达队头时执行 dead-letter；
+- Classic Queue 通常在消息到达队头时 dead-letter，也可能在影响队列的 policy 变化时处理；
+- 因而已逻辑过期、但仍排在未过期队头消息之后的记录，可能暂时占用队列资源。
 
-这和 Redis 惰性删除有相似处：都不是简单地“到点自动触发一个独立回调”，过期检测往往是延迟判断，而不是绝对准时触发。
+所以 TTL 表示“最长可投递生存时间”，不等于为每条消息注册一个绝对准时的回调。
 
 ### 2.4 队头阻塞是延时不准的核心原因
 
@@ -105,7 +105,7 @@ Producer → Delayed Exchange（按 x-delay 调度）→ Business Queue → Cons
 
 **但该插件已不可作为新项目的推荐方案**：
 
-- 官方仓库 rabbitmq-delayed-message-exchange 已于 2026-01 归档，不再维护；
+- 官方仓库 rabbitmq-delayed-message-exchange 已于 2026-04-16 归档，不再维护；
 - 插件依赖的 Mnesia 存储在 RabbitMQ 4.3 中被移除，4.3+ 上官方插件无法使用；
 - 仅在 RabbitMQ 旧版本（≤4.2）的存量系统中可以继续使用。
 
@@ -133,7 +133,7 @@ Producer → Delayed Exchange（按 x-delay 调度）→ Business Queue → Cons
   ↓
 队列记录消息 TTL / expireAt
   ↓
-broker 在投递、队头检查或内部维护过程中发现消息过期
+消息到达队头等过期处理时机，broker 确认其已过期
   ↓
 消息进入 DLX，按 routing key 转发到业务队列
   ↓
@@ -234,7 +234,7 @@ def publish_delay(order_id, level):
 
 ```python
 # 依赖 rabbitmq-delayed-message-exchange 插件
-# 官方仓库已于 2026-01 归档；RabbitMQ 4.3+ 无法使用（Mnesia 已移除）
+# 官方仓库已于 2026-04-16 归档；RabbitMQ 4.3+ 无法使用（Mnesia 已移除）
 channel.exchange_declare(
     exchange="order.delay.ex",
     exchange_type="x-delayed-message",
@@ -256,16 +256,35 @@ channel.basic_publish(
 # Redis ZSet 调度示例：score 为到期时间戳
 redis.zadd("delay:orders", {order_id: time.time() + delay_seconds})
 
-# 调度进程轮询到期成员，投递到 MQ
+# 多实例调度时必须用 Lua/事务等方式原子认领，不能只 zrange 后直接 zrem
 def poll():
-    due = redis.zrangebyscore("delay:orders", 0, time.time())
+    due = claim_due_members_atomically(
+        redis,
+        key="delay:orders",
+        now=time.time(),
+        visibility_timeout=30,
+    )
     for order_id in due:
-        channel.basic_publish(exchange="order.biz.ex",
-                              routing_key="order.close", body=order_id)
-        redis.zrem("delay:orders", order_id)
+        try:
+            publish_with_confirm(
+                exchange="order.biz.ex",
+                routing_key="order.close",
+                body=order_id,
+            )
+            mark_schedule_done(order_id)
+        except Exception:
+            return_to_schedule(order_id)
 ```
 
-## 6. 常见误区与排查思路
+外部调度仍可能在“发布成功但标记完成前”重复投递，因此业务消费者必须幂等。
+
+## 6. 理解推进与使用边界
+
+延时消息的学习顺序应是：先理解普通消息如何路由和确认，再理解 TTL 如何让消息失效、DLX 如何重新路由，最后比较固定延时队列、历史插件和外部调度。
+
+RabbitMQ 延时适合“到期后触发一条业务消息”，不等于通用定时任务平台。高精度、大规模、任意时间点、需要取消/修改计划的任务，应优先评估专门调度系统或外部时间索引。
+
+## 7. 常见误区与排查思路
 
 - **误区 1：死信队列只能处理失败消息。** 过期、拒绝、队列满等都可能进入 DLX，延时队列正是利用过期死信。
 - **误区 2：TTL 到期等于马上进入死信队列。** 普通 FIFO 队列可能受队头阻塞影响，消息级 TTL 不同也不能精准按时间顺序触发。
@@ -281,13 +300,14 @@ def poll():
 是否可以归并延时等级，或改用外部调度（延时任务表 / Redis ZSet）？
 ```
 
-## 7. 关联知识点
+## 8. 关联知识点
 
 - `009_RabbitMQ：vhost、exchange、queue、binding.md`
-- `013_RabbitMQ_惰性队列：磁盘优先与消费定位.md`
-- `014_Redis_过期删除：惰性删除、定期删除与内存淘汰.md`
+- `010_Routing_Key_与_Binding_Key.md`
+- `011_RabbitMQ_可靠投递、消费确认与队列存储.md`
+- `008_Kafka_重试机制、Retry_Topic_与死信队列.md`
 
-## 8. 复习检查问题
+## 9. 复习检查问题
 
 - TTL + DLX 实现延时队列的完整路径是什么？
 - 队列 TTL 和消息 TTL 有什么区别？

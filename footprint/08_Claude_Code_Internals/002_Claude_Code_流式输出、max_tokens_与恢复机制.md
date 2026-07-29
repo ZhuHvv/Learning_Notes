@@ -245,8 +245,8 @@ Query Loop 博客展示了 `ask → QueryEngine.submitMessage → query → quer
 - `004_Claude_Code_上下文压缩、Microcompact_与状态恢复.md`
 - `006_Claude_Code_Agent_Loop、Query_生命周期与工具编排.md`
 - `../01_LLM_Transformer/007_Causal_Mask、自回归生成与_KV_Cache.md`
-- `../02_Agent_RAG_Memory/006_Agent_的端到端任务能力.md`
-- `../02_Agent_RAG_Memory/017_LangGraph_状态更新、invoke_与_stream.md`
+- `../02_Agent_RAG_Memory/002_Agent_的端到端任务能力.md`
+- `../02_Agent_RAG_Memory/011_LangGraph_状态更新、invoke_与_stream.md`
 - `../04_Go/009_Go_SSE：text_event-stream_与流式响应.md`
 - `../07_Backend_Deploy_Network/007_HTTP_Streaming、SSE、WebSocket_与_gRPC_Streaming.md`
 
