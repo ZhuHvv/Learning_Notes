@@ -2,7 +2,7 @@
 
 Agent 行动、工具接入、框架编排、反思、记忆、RAG 检索增强与评估，并收录相关的 Prompt 工程和机器学习基础。
 
-主线知识点文件数：23；基础附录：1。
+主线知识点文件数：25；基础附录：1。
 
 阅读顺序按主题分块组织，每个主题块内部由基础概念逐步推进到实现、优化和评估。
 
@@ -46,6 +46,8 @@ Agent 行动、工具接入、框架编排、反思、记忆、RAG 检索增强�
 - [RAG Multi-Query Expansion：多查询扩展](021_RAG_Multi-Query_Expansion_多查询扩展.md)
 - [Query Rewrite、HyDE 与 Multi-Query 对比](022_Query_Rewrite、HyDE_与_Multi-Query_对比.md)
 - [RAGAS 评估指标与 Ground Truth 来源](023_RAGAS_评估指标与_Ground_Truth_来源.md)
+- [Late Chunking：全文上下文化、Mean Pooling 与边界对齐](024_Late_Chunking：全文上下文化、Mean_Pooling_与边界对齐.md)
+- [父子分块：层级切分、ID 映射与父块回取](025_父子分块：层级切分、ID_映射与父块回取.md)
 
 ## 附录
 

@@ -1,10 +1,10 @@
 # Semaphore、Queue 与异步背压
 
 > 学习层级：进阶
-> 
 > 前置知识：[Task 聚合、取消、超时与 asyncio.wait
+> ](008\_Task\_%E8%81%9A%E5%90%88%E3%80%81%E5%8F%96%E6%B6%88%E3%80%81%E8%B6%85%E6%97%B6%E4%B8%8E\_asyncio.wait.md)后续阅读：[异步生成器与 asynccontextmanager
 > 
-> ](008_Task_%E8%81%9A%E5%90%88%E3%80%81%E5%8F%96%E6%B6%88%E3%80%81%E8%B6%85%E6%97%B6%E4%B8%8E_asyncio.wait.md)后续阅读：[异步生成器与 asynccontextmanager](010_%E5%BC%82%E6%AD%A5%E7%94%9F%E6%88%90%E5%99%A8%E3%80%81asynccontextmanager_%E4%B8%8E_yield_%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F.md)
+> ](010_%E5%BC%82%E6%AD%A5%E7%94%9F%E6%88%90%E5%99%A8%E3%80%81asynccontextmanager_%E4%B8%8E_yield_%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F.md)
 
 ## 1. Semaphore 限制并发度
 
