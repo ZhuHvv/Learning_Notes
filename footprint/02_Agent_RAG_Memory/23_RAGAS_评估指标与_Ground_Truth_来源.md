@@ -1,4 +1,4 @@
-# RAGAS 评估指标与 Ground Truth 来源
+# 02.23 RAGAS 评估指标与 Ground Truth 来源
 
 ## 1. 总体性概念
 
@@ -18,7 +18,7 @@
 四个字段的来源不同：
 
 | 字段 | 含义 | 通常来源 |
-|---|---|---|
+| --- | --- | --- |
 | Question | 用户问题/测试问题 | 真实日志、人工设计、数据集、合成问题 |
 | Retrieved Contexts | RAG 实际召回的文档片段 | 被测检索链路运行结果 |
 | Answer | 被测系统生成的回答 | RAG 应用输出 |
@@ -32,7 +32,7 @@ Ground Truth 不是从本次被测 Answer 自动复制出来的。否则相当�
 
 最终答案失败可能有两类原因：
 
-```text
+```
 A. 正确证据没有被检索出来
 B. 正确证据已经存在，但模型没有忠实使用
 ```
@@ -81,7 +81,7 @@ B. 正确证据已经存在，但模型没有忠实使用
 
 把 answer 拆成若干事实声明，检查每条声明是否能从 retrieved contexts 推出：
 
-```text
+```
 Faithfulness ≈ 被上下文支持的回答声明数 / 回答声明总数
 ```
 
@@ -99,7 +99,7 @@ Faithfulness ≈ 被上下文支持的回答声明数 / 回答声明总数
 
 以 reference answer 中的必要事实为基准，检查 retrieved contexts 是否包含支持这些事实的信息：
 
-```text
+```
 Context Recall ≈ 能被检索上下文覆盖的参考事实 / 参考事实总数
 ```
 
@@ -120,7 +120,7 @@ RAGAS 常借助 LLM 做事实拆分、蕴含判断和相关性评分。评审模
 
 ### 3.1 建立评估集
 
-```text
+```
 权威文档 / 真实业务问答
   ↓ 选取代表性问题
   ↓ 编写或审核 reference answer
@@ -130,7 +130,7 @@ RAGAS 常借助 LLM 做事实拆分、蕴含判断和相关性评分。评审模
 
 ### 3.2 运行被测 RAG
 
-```text
+```
 question
   ↓ 当前检索链路
 retrieved_contexts
@@ -200,7 +200,7 @@ def diagnose(sample):
 
 ### 5.3 Ground Truth 质量控制
 
-```text
+```
 草拟 reference answer
   ↓ 与权威文档逐条对齐
   ↓ 第二位审核者复核
@@ -226,9 +226,9 @@ def diagnose(sample):
 ## 8. 关联知识点
 
 - `018_RAG_完整链路：召回、融合、重排、生成.md`
-- [稠密向量、稀疏向量与多向量表示及检索](../01_LLM_Transformer/10_稠密向量、稀疏向量与多向量表示及检索.md)
+- [稠密向量、稀疏向量与多向量表示及检索](../01_LLM_Transformer/10_%E7%A8%A0%E5%AF%86%E5%90%91%E9%87%8F%E3%80%81%E7%A8%80%E7%96%8F%E5%90%91%E9%87%8F%E4%B8%8E%E5%A4%9A%E5%90%91%E9%87%8F%E8%A1%A8%E7%A4%BA%E5%8F%8A%E6%A3%80%E7%B4%A2.md)
 - `022_Query_Rewrite、HyDE_与_Multi-Query_对比.md`
-- [Bi-encoder、Cross Encoder 与重排](../01_LLM_Transformer/12_Bi-encoder、Cross_Encoder_与重排.md)
+- [Bi-encoder、Cross Encoder 与重排](../01_LLM_Transformer/12_Bi-encoder%E3%80%81Cross_Encoder_%E4%B8%8E%E9%87%8D%E6%8E%92.md)
 
 ## 9. 复习检查问题
 

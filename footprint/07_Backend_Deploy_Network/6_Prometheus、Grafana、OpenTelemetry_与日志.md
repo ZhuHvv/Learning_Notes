@@ -1,4 +1,4 @@
-# Prometheus、Grafana、OpenTelemetry 与日志
+# 07.06 Prometheus、Grafana、OpenTelemetry 与日志
 
 ## 1. 总体性概念
 
@@ -59,4 +59,3 @@ retrieval_top_k 8
 ## 6. 你在讨论中的理解推进
 
 你提过 Prometheus 9090 和 Agent 日志；开发日志应升级为生产可观测性闭环。
-

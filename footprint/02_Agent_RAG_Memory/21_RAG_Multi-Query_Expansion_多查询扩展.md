@@ -1,4 +1,4 @@
-# RAG Multi-Query Expansion：多查询扩展
+# 02.21 RAG Multi-Query Expansion：多查询扩展
 
 ## 1. 总体性概念
 

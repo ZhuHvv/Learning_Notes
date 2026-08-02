@@ -1,4 +1,4 @@
-# RabbitMQ Federation：联邦交换机与联邦队列
+# 06.13 RabbitMQ Federation：联邦交换机与联邦队列
 
 ## 1. 总体性概念
 

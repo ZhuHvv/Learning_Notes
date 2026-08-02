@@ -1,4 +1,4 @@
-# IterResearch、Research Synthesis 与常量大小上下文
+# 02.16 IterResearch、Research Synthesis 与常量大小上下文
 
 ## 1. 总体性概念
 
@@ -160,4 +160,3 @@ def iter_research(question, max_rounds=5):
 2. Research Synthesis 和普通摘要有什么区别？
 3. 为什么要保留 evidence store？
 4. IterResearch 适合什么任务，不适合什么任务？
-

@@ -1,4 +1,4 @@
-# Go 错误处理：error、panic 与 recover
+# 04.03 Go 错误处理：error、panic 与 recover
 
 > 所属主线：Go 错误处理  
 > 难度：入门  

@@ -1,4 +1,4 @@
-# Late Chunking：全文上下文化、Mean Pooling 与边界对齐
+# 02.24 Late Chunking：全文上下文化、Mean Pooling 与边界对齐
 
 ## 1. 总体性概念
 

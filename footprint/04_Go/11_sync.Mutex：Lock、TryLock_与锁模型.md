@@ -1,4 +1,4 @@
-# sync.Mutex：Lock、TryLock 与锁模型
+# 04.11 sync.Mutex：Lock、TryLock 与锁模型
 
 > 所属主线：Go 并发  
 > 难度：进阶  

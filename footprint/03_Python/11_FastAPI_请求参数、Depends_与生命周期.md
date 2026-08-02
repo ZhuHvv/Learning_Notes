@@ -1,4 +1,4 @@
-# FastAPI 请求参数、Depends 与生命周期
+# 03.11 FastAPI 请求参数、Depends 与生命周期
 
 > 学习层级：进阶  
 > 前置知识：[异步生成器与 asynccontextmanager](10_异步生成器、asynccontextmanager_与_yield_生命周期.md)、[Pydantic 数据模型](4_dataclass、TypedDict_与_Pydantic.md)  

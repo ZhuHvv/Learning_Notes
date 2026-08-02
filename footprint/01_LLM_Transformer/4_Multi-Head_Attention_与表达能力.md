@@ -1,4 +1,4 @@
-# Multi-Head Attention 与表达能力
+# 01.04 Multi-Head Attention 与表达能力
 
 ## 1. 总体性概念
 
@@ -64,4 +64,3 @@ Y = concat(outs) @ Wo
 ## 6. 你在讨论中的理解推进
 
 你追问“表达能力是什么”，这里可落到多头提供更丰富、可组合的特征空间。
-

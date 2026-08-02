@@ -1,4 +1,4 @@
-# LangChain @tool 与 bind tools
+# 02.04 LangChain @tool 与 bind tools
 
 ## 1. 总体性概念
 

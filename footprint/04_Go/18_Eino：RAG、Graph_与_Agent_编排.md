@@ -1,4 +1,4 @@
-# Eino：RAG、Graph 与 Agent 编排
+# 04.18 Eino：RAG、Graph 与 Agent 编排
 
 > 所属主线：Go AI 应用  
 > 难度：深入  

@@ -1,4 +1,4 @@
-# MRKL、ReAct、ToT 与 Plan-and-Execute
+# 02.06 MRKL、ReAct、ToT 与 Plan-and-Execute
 
 ## 1. 总体性概念
 
@@ -221,4 +221,3 @@ def plan_and_execute(goal, tools):
 3. ToT 为什么成本更高？
 4. 什么情况下应该触发 replan？
 5. 为什么行动范式必须配合状态结构，而不是只靠 prompt？
-

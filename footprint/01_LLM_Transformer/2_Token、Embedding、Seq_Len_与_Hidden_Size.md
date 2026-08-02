@@ -1,4 +1,4 @@
-# Token、Embedding、Seq Len 与 Hidden Size
+# 01.02 Token、Embedding、Seq Len 与 Hidden Size
 
 ## 1. 总体性概念
 

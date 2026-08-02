@@ -1,4 +1,4 @@
-# FastAPI UploadFile、File 与 Form
+# 03.12 FastAPI UploadFile、File 与 Form
 
 > 学习层级：进阶  
 > 前置知识：[FastAPI 请求参数与依赖](11_FastAPI_请求参数、Depends_与生命周期.md)  
@@ -125,4 +125,3 @@ FastAPI 构造 File / Form / UploadFile
 ```
 
 `bytes` 像把整箱资料一次搬到桌上；`UploadFile` 像从临时仓库分批取用。
-

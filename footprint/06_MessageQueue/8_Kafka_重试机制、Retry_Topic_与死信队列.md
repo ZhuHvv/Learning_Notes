@@ -1,4 +1,4 @@
-# Kafka 重试机制、Retry Topic 与死信队列
+# 06.08 Kafka 重试机制、Retry Topic 与死信队列
 
 ## 1. 总体性概念
 

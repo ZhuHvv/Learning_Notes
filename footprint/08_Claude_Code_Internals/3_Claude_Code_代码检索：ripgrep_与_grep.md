@@ -1,4 +1,4 @@
-# Claude Code 代码检索：ripgrep 与 grep
+# 08.03 Claude Code 代码检索：ripgrep 与 grep
 
 ## 1. 一句话定位
 

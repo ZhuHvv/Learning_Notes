@@ -1,4 +1,4 @@
-# GoFrame g.Meta：声明式路由绑定
+# 04.06 GoFrame g.Meta：声明式路由绑定
 
 > 所属主线：Go Web 工程  
 > 难度：基础  

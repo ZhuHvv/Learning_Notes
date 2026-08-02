@@ -1,4 +1,4 @@
-# Encoder、Decoder、Decoder-only 与 Cross Attention
+# 01.06 Encoder、Decoder、Decoder-only 与 Cross Attention
 
 ## 1. 总体性概念
 

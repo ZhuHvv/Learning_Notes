@@ -1,4 +1,4 @@
-# RabbitMQ：vhost、exchange、queue、binding
+# 06.09 RabbitMQ：vhost、exchange、queue、binding
 
 ## 1. 总体性概念
 

@@ -1,4 +1,4 @@
-# Extended Thinking 与 ReAct 推理范式对比
+# 02.07 Extended Thinking 与 ReAct 推理范式对比
 
 ## 1. 总体性概念
 

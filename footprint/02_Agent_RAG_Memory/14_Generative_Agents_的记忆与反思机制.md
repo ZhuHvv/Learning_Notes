@@ -1,4 +1,4 @@
-# Generative Agents 的记忆与反思机制
+# 02.14 Generative Agents 的记忆与反思机制
 
 ## 1. 总体性概念
 

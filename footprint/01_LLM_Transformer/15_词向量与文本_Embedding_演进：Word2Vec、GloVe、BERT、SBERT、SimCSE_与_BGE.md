@@ -1,4 +1,4 @@
-# 词向量与文本 Embedding 演进：Word2Vec、GloVe、BERT、SBERT、SimCSE 与 BGE
+# 01.15 词向量与文本 Embedding 演进：Word2Vec、GloVe、BERT、SBERT、SimCSE 与 BGE
 
 ## 1. 总体性概念
 
@@ -265,4 +265,3 @@ scores = query_vectors @ document_vectors.T
 - [SimCSE: Simple Contrastive Learning of Sentence Embeddings](https://aclanthology.org/2021.emnlp-main.552/)
 - [C-Pack / BGE 技术报告](https://arxiv.org/abs/2309.07597)
 - [FlagEmbedding 官方实现](https://github.com/FlagOpen/FlagEmbedding)
-

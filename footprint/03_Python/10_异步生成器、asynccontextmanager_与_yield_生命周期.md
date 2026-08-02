@@ -1,4 +1,4 @@
-# 异步生成器、asynccontextmanager 与 yield 生命周期
+# 03.10 异步生成器、asynccontextmanager 与 yield 生命周期
 
 > 学习层级：进阶  
 > 前置知识：[Semaphore、Queue 与异步背压](9_Semaphore、Queue_与异步背压.md)  

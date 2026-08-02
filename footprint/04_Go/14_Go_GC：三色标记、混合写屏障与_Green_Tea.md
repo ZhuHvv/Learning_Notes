@@ -1,4 +1,4 @@
-# Go GC：三色标记、混合写屏障与 Green Tea
+# 04.14 Go GC：三色标记、混合写屏障与 Green Tea
 
 > 所属主线：Go Runtime 与内存  
 > 难度：深入  

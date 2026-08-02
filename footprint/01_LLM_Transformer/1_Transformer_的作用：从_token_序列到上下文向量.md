@@ -1,4 +1,4 @@
-# Transformer 的作用：从 token 序列到上下文向量
+# 01.01 Transformer 的作用：从 token 序列到上下文向量
 
 ## 1. 总体性概念
 

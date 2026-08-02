@@ -1,4 +1,4 @@
-# Claude Code 上下文压缩、Microcompact 与状态恢复
+# 08.04 Claude Code 上下文压缩、Microcompact 与状态恢复
 
 ## 1. 先区分三类动作
 

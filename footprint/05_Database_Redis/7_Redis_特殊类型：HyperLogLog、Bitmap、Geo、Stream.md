@@ -1,4 +1,4 @@
-# Redis 特殊类型：HyperLogLog、Bitmap、Geo、Stream
+# 05.07 Redis 特殊类型：HyperLogLog、Bitmap、Geo、Stream
 
 ## 1. 总体性概念
 

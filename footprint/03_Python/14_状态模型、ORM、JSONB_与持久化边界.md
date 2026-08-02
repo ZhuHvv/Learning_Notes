@@ -1,4 +1,4 @@
-# 状态模型、ORM、JSONB 与持久化边界
+# 03.14 状态模型、ORM、JSONB 与持久化边界
 
 > 学习层级：综合进阶  
 > 前置知识：[Pydantic 数据模型](4_dataclass、TypedDict_与_Pydantic.md)、[后台任务边界](13_FastAPI_BackgroundTasks_与可靠任务边界.md)  
@@ -119,4 +119,3 @@ default=uuid.uuid4()  # 多个记录可能复用同一个已生成值
 5. 并发更新和重试是否幂等？
 6. 删除由 ORM 还是数据库级联？
 7. UUID 默认值是在每次写入时生成，还是导入时就已求值？
-

@@ -1,4 +1,4 @@
-# Claude Code 流式输出、max_tokens 与恢复机制
+# 08.02 Claude Code 流式输出、max_tokens 与恢复机制
 
 ## 1. 先区分两种长度限制
 

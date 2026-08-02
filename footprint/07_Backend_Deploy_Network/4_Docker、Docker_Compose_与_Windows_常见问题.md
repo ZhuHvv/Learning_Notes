@@ -1,4 +1,4 @@
-# Docker、Docker Compose 与 Windows 常见问题
+# 07.04 Docker、Docker Compose 与 Windows 常见问题
 
 ## 1. 总体性概念
 
@@ -62,4 +62,3 @@ docker compose down -v
 ## 6. 你在讨论中的理解推进
 
 你遇到 Docker Desktop、compose、Kafka volume 问题；排查要看系统虚拟化、路径和命令版本。
-

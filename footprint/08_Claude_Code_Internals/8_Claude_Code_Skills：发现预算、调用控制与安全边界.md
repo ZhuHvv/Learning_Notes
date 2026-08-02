@@ -1,4 +1,4 @@
-# Claude Code Skills：发现预算、调用控制与安全边界
+# 08.08 Claude Code Skills：发现预算、调用控制与安全边界
 
 ## 1. 一句话定位
 

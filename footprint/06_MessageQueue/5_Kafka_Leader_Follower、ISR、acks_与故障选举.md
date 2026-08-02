@@ -1,4 +1,4 @@
-# Kafka Leader/Follower、ISR、acks 与故障选举
+# 06.05 Kafka Leader/Follower、ISR、acks 与故障选举
 
 ## 1. 总体性概念
 

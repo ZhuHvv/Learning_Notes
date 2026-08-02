@@ -1,4 +1,4 @@
-# Redis 复制：PSYNC、FULLRESYNC、RDB 与 backlog
+# 05.12 Redis 复制：PSYNC、FULLRESYNC、RDB 与 backlog
 
 ## 1. 总体性概念
 

@@ -1,4 +1,4 @@
-# Bi-encoder、Cross Encoder 与重排
+# 01.12 Bi-encoder、Cross Encoder 与重排
 
 ## 1. 总体性概念
 

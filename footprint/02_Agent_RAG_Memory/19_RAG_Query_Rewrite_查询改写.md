@@ -1,4 +1,4 @@
-# RAG Query Rewrite：查询改写
+# 02.19 RAG Query Rewrite：查询改写
 
 ## 1. 总体性概念
 

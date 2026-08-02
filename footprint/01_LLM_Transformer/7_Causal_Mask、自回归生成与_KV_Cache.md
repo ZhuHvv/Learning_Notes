@@ -1,4 +1,4 @@
-# Causal Mask、自回归生成与 KV Cache
+# 01.07 Causal Mask、自回归生成与 KV Cache
 
 ## 1. 总体性概念
 

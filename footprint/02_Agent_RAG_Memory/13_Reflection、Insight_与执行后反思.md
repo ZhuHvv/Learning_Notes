@@ -1,4 +1,4 @@
-# Reflection、Insight 与执行后反思
+# 02.13 Reflection、Insight 与执行后反思
 
 ## 1. 总体性概念
 
@@ -156,4 +156,3 @@ if should_save_insight(reflection):
 2. Insight 和普通日志有什么区别？
 3. 为什么不能把所有 reflection 都写入长期记忆？
 4. 完成后反思和失败后反思分别有什么价值？
-

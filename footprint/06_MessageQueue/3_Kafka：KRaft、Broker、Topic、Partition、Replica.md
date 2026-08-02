@@ -1,4 +1,4 @@
-# Kafka：KRaft、Broker、Topic、Partition、Replica
+# 06.03 Kafka：KRaft、Broker、Topic、Partition、Replica
 
 ## 1. 总体性概念
 

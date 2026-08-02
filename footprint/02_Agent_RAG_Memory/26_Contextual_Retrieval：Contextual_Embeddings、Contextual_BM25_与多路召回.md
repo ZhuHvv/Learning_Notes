@@ -1,4 +1,4 @@
-# Contextual Retrieval：Contextual Embeddings、Contextual BM25 与多路召回
+# 02.26 Contextual Retrieval：Contextual Embeddings、Contextual BM25 与多路召回
 
 ## 1. 核心结论
 

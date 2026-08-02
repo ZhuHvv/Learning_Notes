@@ -1,4 +1,4 @@
-# Go SSE：text/event-stream 与流式响应
+# 04.17 Go SSE：text/event-stream 与流式响应
 
 > 所属主线：Go 流式应用  
 > 难度：深入  

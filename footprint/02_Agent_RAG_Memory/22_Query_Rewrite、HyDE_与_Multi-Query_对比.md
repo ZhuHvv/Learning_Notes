@@ -1,4 +1,4 @@
-# Query Rewrite、HyDE 与 Multi-Query 对比
+# 02.22 Query Rewrite、HyDE 与 Multi-Query 对比
 
 ## 1. 总体性概念
 

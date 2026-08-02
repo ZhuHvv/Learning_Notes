@@ -1,4 +1,4 @@
-# Kafka Consumer Group、Offset 与 Rebalance
+# 06.06 Kafka Consumer Group、Offset 与 Rebalance
 
 ## 1. 总体性概念
 

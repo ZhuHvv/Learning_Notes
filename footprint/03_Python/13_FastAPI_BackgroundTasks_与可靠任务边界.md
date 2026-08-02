@@ -1,4 +1,4 @@
-# FastAPI BackgroundTasks 与可靠任务边界
+# 03.13 FastAPI BackgroundTasks 与可靠任务边界
 
 > 学习层级：进阶  
 > 前置知识：[FastAPI UploadFile、File 与 Form](12_FastAPI_UploadFile、File_与_Form.md)  
@@ -100,4 +100,3 @@ Worker 独立执行
 - 最终状态。
 
 否则“响应已发送”很容易被误解为“后台工作已经完成”。
-

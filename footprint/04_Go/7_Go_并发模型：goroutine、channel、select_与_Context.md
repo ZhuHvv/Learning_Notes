@@ -1,4 +1,4 @@
-# Go 并发模型：goroutine、channel、select 与 Context
+# 04.07 Go 并发模型：goroutine、channel、select 与 Context
 
 > 所属主线：Go 并发  
 > 难度：基础  

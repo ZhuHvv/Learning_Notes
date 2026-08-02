@@ -1,4 +1,4 @@
-# Redis Sentinel 与 Cluster：高可用和分片选型
+# 05.13 Redis Sentinel 与 Cluster：高可用和分片选型
 
 ## 1. 总体性概念
 

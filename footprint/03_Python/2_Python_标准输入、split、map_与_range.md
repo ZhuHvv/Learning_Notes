@@ -1,4 +1,4 @@
-# Python 标准输入、split、map 与 range
+# 03.02 Python 标准输入、split、map 与 range
 
 > 学习层级：入门  
 > 前置知识：[Python 环境与解释器](1_Conda、pip、Python_路径与包导入.md)  
@@ -192,4 +192,3 @@ print(type(r))
 - [Python `map` 文档](https://docs.python.org/3/library/functions.html#map)
 - [Python `range` 文档](https://docs.python.org/3/library/stdtypes.html#ranges)
 - 原始整理来源：[技术问题解答准则分享对话](https://chatgpt.com/share/6a69fbe0-2524-83ec-b330-b1326ce3d368)
-

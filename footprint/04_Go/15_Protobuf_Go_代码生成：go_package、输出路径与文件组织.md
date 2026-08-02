@@ -1,4 +1,4 @@
-# Protobuf Go 代码生成：go_package、输出路径与文件组织
+# 04.15 Protobuf Go 代码生成：go_package、输出路径与文件组织
 
 > 所属主线：Go RPC 与代码生成  
 > 难度：深入  

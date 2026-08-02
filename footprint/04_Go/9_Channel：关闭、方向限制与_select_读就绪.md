@@ -1,4 +1,4 @@
-# Channel：关闭、方向限制与 select 读就绪
+# 04.09 Channel：关闭、方向限制与 select 读就绪
 
 > 所属主线：Go 并发  
 > 难度：进阶  

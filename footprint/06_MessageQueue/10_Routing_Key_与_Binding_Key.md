@@ -1,4 +1,4 @@
-# Routing Key 与 Binding Key
+# 06.10 Routing Key 与 Binding Key
 
 ## 1. 总体性概念
 
