@@ -1,7 +1,7 @@
 # 03.10 异步生成器、asynccontextmanager 与 yield 生命周期
 
 > 学习层级：进阶  
-> 前置知识：[Semaphore、Queue 与异步背压](9_Semaphore、Queue_与异步背压.md)  
+> 前置知识：[Semaphore、Queue 与异步背压](09_Semaphore、Queue_与异步背压.md)  
 > 后续阅读：[FastAPI 请求参数、Depends 与生命周期](11_FastAPI_请求参数、Depends_与生命周期.md)
 
 ## 1. 普通异步生成器由消费者推进

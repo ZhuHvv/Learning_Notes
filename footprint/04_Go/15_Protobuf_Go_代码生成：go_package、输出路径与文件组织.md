@@ -308,7 +308,7 @@ Go 编译器再按 go.mod module + 真实目录寻找并编译包
 | import `rpc-learn/proto` 找不到 | 生成文件不在 `./proto` | 检查 `--go_out` 和 `paths`，删除嵌套目录后重新生成 |
 | inconsistent names | 同一 import path 下多个 proto 的 Go 包名不一致 | 统一 `;package`，或拆目录分包 |
 
-`package command-line-arguments is not a main package` 属于普通 Go 入口与 package 组织问题，统一参见 [Go Module、包与导入路径](1_Go_Module、包与导入路径.md)，不在本篇重复展开。
+`package command-line-arguments is not a main package` 属于普通 Go 入口与 package 组织问题，统一参见 [Go Module、包与导入路径](01_Go_Module、包与导入路径.md)，不在本篇重复展开。
 
 ### 7.2 常见误区
 

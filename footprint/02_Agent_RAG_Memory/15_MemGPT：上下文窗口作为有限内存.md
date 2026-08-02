@@ -97,7 +97,7 @@ while chatting:
 
 关联阅读：
 
-- `016_IterResearch、Research_Synthesis_与常量大小上下文.md`
-- `012_Agent_Memory_四类：短期、情景、语义、程序性.md`
-- `017_Mem0_与_A-Mem：生产级长期记忆管理.md`
-- `018_RAG_完整链路：召回、融合、重排、生成.md`
+- `16_IterResearch、Research_Synthesis_与常量大小上下文.md`
+- `12_Agent_Memory_四类：短期、情景、语义、程序性.md`
+- `17_Mem0_与_A-Mem：生产级长期记忆管理.md`
+- `18_RAG_完整链路：召回、融合、重排、生成.md`

@@ -123,7 +123,7 @@ LangGraph 的核心是 stateful graph：
 → Edge 选择下一 Node → 可 checkpoint / 人工介入 → END
 ```
 
-它适合复杂分支、多步骤工具调用、长任务、可恢复流程和明确状态转移。代价是必须设计 state、node、edge、reducer 和错误路径。具体的状态更新与流式调用见 `011_LangGraph_状态更新、invoke_与_stream.md`。
+它适合复杂分支、多步骤工具调用、长任务、可恢复流程和明确状态转移。代价是必须设计 state、node、edge、reducer 和错误路径。具体的状态更新与流式调用见 `11_LangGraph_状态更新、invoke_与_stream.md`。
 
 ## 6. 新一代与生态型框架
 

@@ -1,7 +1,7 @@
 # 03.14 状态模型、ORM、JSONB 与持久化边界
 
 > 学习层级：综合进阶  
-> 前置知识：[Pydantic 数据模型](4_dataclass、TypedDict_与_Pydantic.md)、[后台任务边界](13_FastAPI_BackgroundTasks_与可靠任务边界.md)  
+> 前置知识：[Pydantic 数据模型](04_dataclass、TypedDict_与_Pydantic.md)、[后台任务边界](13_FastAPI_BackgroundTasks_与可靠任务边界.md)  
 > 后续阅读：结合 Agent、数据库和消息队列专题继续学习
 
 ## 1. BusinessState 与 RuntimeContext 分层
