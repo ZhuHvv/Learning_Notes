@@ -5,7 +5,7 @@ source: "https://my.feishu.cn/wiki/J719wT5SUik41wk00WpcGLdSn0c"
 canonical_url: "https://my.feishu.cn/wiki/J719wT5SUik41wk00WpcGLdSn0c"
 tags:
   - feishu
-exported_at: 2026-08-02T12:45:20.610734+00:00
+exported_at: 2026-08-02T13:04:16.057113+00:00
 ---
 
 # 09. Function Call 工程化落地两大问题深度解析
@@ -90,6 +90,8 @@ SFT 的方向没有错，但面试官想听到的是更深入的训练策略设�
 | --- | --- | --- | --- |
 |   多级漏斗   |   粗筛 + 精排两级流水线   |   成熟可靠，工程实现简单   |   粗筛层需保证高召回   |
 |   分层组织   |   先选类别再加载详情   |   大幅减少单次 token 消耗   |   增加一轮推理延迟   |
+|   检索注入   |   向量检索动态选工具   |   对新增工具天然友好   |   需维护向量库   |
+|   微调内化   |   工具知识写入模型参数   |   推理时 token 消耗最低   |      |
 
 ### 面试回答建议
 

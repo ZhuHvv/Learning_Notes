@@ -30,6 +30,18 @@ Bi-encoder 吞吐高，适合从大库召回几十到几百条；代价是 query
 
 Cross-Encoder 联合交互通常更准确，但成本随候选数增长，不能像文档 embedding 一样离线复用。典型流程是先召回 top100，再精排到 top5～10；具体数量应由 Recall@K、nDCG、成本和延迟评估确定。
 
+### Cross-Encoder 输出的不是可复用文档向量
+
+BERT 类 Cross-Encoder 常把输入组织成：
+
+```
+[CLS] query [SEP] document [SEP]
+```
+
+Query 与 Document 的 token 在同一个 Transformer 中完整交互，再由分类或回归头输出一个相关性标量或标签。很多实现确实使用 `[CLS]` 对应的隐藏状态接分类头，但工程表达不应简化成“得到 CLS”：`[CLS]` 是输入中的特殊 token，真正供排序使用的是模型头输出的 score。
+
+Cross-Encoder 不会分别产出可离线复用的 query vector 和 document vector。它需要为每个 query-document pair 重新计算，因此只能处理第一阶段召回后的较小候选集。接口语义可参考 [Sentence Transformers CrossEncoder](https://sbert.net/docs/package_reference/cross_encoder/model.html) 与[官方用法](https://sbert.net/docs/cross_encoder/usage/usage.html)。
+
 ### 分数和结果映射的边界
 
 Reranker 分数不保证位于 0～1，也不应跨模型/版本直接比较。若供应商返回已重排结果，再按索引把 score 写回原列表，可能把分数配错文档；应使用 candidate ID，阅读版本契约，并用打乱顺序的测试验证。
@@ -87,7 +99,7 @@ Top-N 只限制数量，不限制长度。过长候选应回取相关章节或�
 
 ## 6. 你在讨论中的理解推进
 
-你从“向量库搜一下”推进到两阶段检索：召回决定覆盖，rerank 决定候选顺序，candidate ID 保证分数映射正确，最终质量还依赖来源、预算和引用一致性。
+你从“向量库搜一下”推进到两阶段检索：召回决定覆盖，rerank 决定候选顺序，candidate ID 保证分数映射正确，最终质量还依赖来源、预算和引用一致性。进一步明确了 Cross-Encoder 是联合编码文本对并输出相关性分数，不能把它笼统描述为“得到 CLS”。
 
 ## 7. 关联知识点
 

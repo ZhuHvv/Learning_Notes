@@ -53,3 +53,7 @@ RAG embedding -> Milvus/pgvector
 ## 6. 你在讨论中的理解推进
 
 你从 MongoDB、Redis、Milvus、SQL 逐步建立按数据形态选型的思路。
+
+## 7. 关联知识点
+
+- [Milvus Segment、Compaction、持久化与内存加载](16_Milvus_Segment、Compaction、持久化与内存加载.md)

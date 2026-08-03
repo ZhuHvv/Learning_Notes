@@ -5,7 +5,7 @@ source: "https://my.feishu.cn/wiki/JPVEwgTpSiE4SCkqVCfczeX5nvE"
 canonical_url: "https://my.feishu.cn/wiki/JPVEwgTpSiE4SCkqVCfczeX5nvE"
 tags:
   - feishu
-exported_at: 2026-08-02T12:46:07.679459+00:00
+exported_at: 2026-08-02T13:04:57.562854+00:00
 ---
 
 # 12. GRPO 中不训练 Reward Model，还有哪些方式获取 Reward？

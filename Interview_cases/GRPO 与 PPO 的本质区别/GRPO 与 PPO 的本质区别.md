@@ -5,7 +5,7 @@ source: "https://my.feishu.cn/wiki/MZSRw1VEuieXXAku23Ycebdjncc"
 canonical_url: "https://my.feishu.cn/wiki/MZSRw1VEuieXXAku23Ycebdjncc"
 tags:
   - feishu
-exported_at: 2026-08-02T12:45:54.648354+00:00
+exported_at: 2026-08-02T13:04:45.772632+00:00
 ---
 
 # 11. GRPO 与 PPO 的本质区别
@@ -47,6 +47,13 @@ PPO 的核心在于计算 优势函数（Advantage） 。直觉很简单：我�
 ```
 Plain Text
 PPO 的优势计算：
+A(s, a) = R(s, a) - V(s)
+
+其中：
+  R(s, a) = 在状态 s 采取动作 a 后获得的实际奖励
+  V(s)    = Critic 预测的在状态 s 下的期望价值（Baseline）
+  A > 0   → 这个动作比预期好，应该强化
+  A < 0   → 这个动作比预期差，应该弱化
 ```
 
 关键问题来了： Critic 是一个需要学习的模型 。它本身可能不准，尤其是在 LLM 场景中，Critic 需要从序列级别的奖励（整个回答好不好）去估计每个 token 级别的价值——这非常困难。一个不准的 Critic 会导致优势估计有偏差，进而导致策略更新方向错误。
@@ -66,6 +73,10 @@ Aᵢ = (Rᵢ - mean(R₁, R₂, ..., R_G)) / std(R₁, R₂, ..., R_G)
 
 其中：
   Rᵢ   = 第 i 个回答获得的奖励
+  mean  = 组内所有回答的平均奖励（替代 Critic）
+  std   = 标准差，用于归一化
+  每个 token 共享同一个优势值（不做 token 级别区分）
+Plain Text
   mean  = 组内所有回答的平均奖励（替代 Critic）
   std   = 标准差，用于归一化
   每个 token 共享同一个优势值（不做 token 级别区分）
@@ -116,7 +127,9 @@ GRPO 的设计哲学更务实：既然我们只有结果级别的奖励，那就
 |   Baseline 来源   |   可学习的 Critic 网络（Value Function），在每个 token 位置给出价值估计   |   同一 Prompt 的多个采样回答的奖励均值，纯统计量   |
 |   优势粒度   |   尝试 token 级别的优势估计（通过 GAE 等方法）   |   整个回答共享同一个优势值（sequence-level）   |
 |   需要的模型   |   Policy + Reference + Reward Model + Critic（4 个大模型）   |   Policy + Reference（2 个大模型，Reward 可以是规则验证器）   |
-|   显存开销   |      |      |
+|   显存开销   |   极高（Critic 通常与 Policy 同等规模）   |   约为 PPO 的 50%   |
+|   训练稳定性   |   对超参数敏感，容易不稳定   |   更简单更稳定   |
+|   KL 正则化   |   通常作为奖励惩罚项   |   直接嵌入损失函数   |
 
 ### 六、为什么 LLM 不需要 Critic？
 

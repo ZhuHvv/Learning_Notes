@@ -5,7 +5,7 @@ source: "https://my.feishu.cn/wiki/AfjVwBeyhiejqGk6ZtMcunN3nIc"
 canonical_url: "https://my.feishu.cn/wiki/AfjVwBeyhiejqGk6ZtMcunN3nIc"
 tags:
   - feishu
-exported_at: 2026-08-02T12:45:39.102562+00:00
+exported_at: 2026-08-02T13:04:32.158679+00:00
 ---
 
 # 10. Function Call 是怎么输出 JSON 的？Embedding 怎么训练的？Temperature 到底改了什么？
@@ -30,6 +30,9 @@ exported_at: 2026-08-02T12:45:39.102562+00:00
 
 ```
 Plain Text
+System: 你有以下工具可用：[工具定义列表]
+User: 北京今天天气怎么样？
+Assistant: <tool_call>{"name": "get_weather", "arguments": {"city": "北京"}}</tool_call>
 ```
 
 模型在大量这类样本上训练后，学会了几件事：
@@ -128,6 +131,7 @@ Embedding 模型的训练通常分多个阶段，从粗到细逐步提升质量�
 
 ```
 Plain Text
+L = -log( exp(sim(a, p) / τ) / Σ exp(sim(a, nᵢ) / τ) )
 ```
 
 其中 a 是 anchor，p 是正样本，nᵢ 是负样本，τ 是温度系数，sim 通常是 cosine similarity。
@@ -142,6 +146,7 @@ In-batch Negatives ：实际训练中，一个 batch 内的其他样本的正样
 
 ```
 Plain Text
+L = max(0, sim(a, n) - sim(a, p) + margin)
 ```
 
 要求正样本的相似度比负样本至少高出 margin。缺点是每次只利用一个负样本，训练效率低，已被 InfoNCE 大幅取代。
@@ -203,12 +208,14 @@ Temperature 就是作用在第 2 步——softmax 之前，对 logits 做一个�
 
 ```
 Plain Text
+P(token_i) = exp(logit_i) / Σ exp(logit_j)
 ```
 
 加入 temperature T 后：
 
 ```
 Plain Text
+P(token_i) = exp(logit_i / T) / Σ exp(logit_j / T)
 ```
 
 就这么简单—— 在 softmax 之前，把每个 logit 除以 T。

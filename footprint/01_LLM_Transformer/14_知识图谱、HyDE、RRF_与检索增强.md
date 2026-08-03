@@ -68,6 +68,59 @@ def rrf(rank_lists, k=60):
 
 RRF 不理解 query 与文档内容，因此融合后仍需要 reranker 判断细粒度相关性。
 
+### 2.4 有 Reranker 时，RRF 是否仍然必需
+
+RRF 与 Cross-Encoder 不是功能重复的两个精排器：
+
+| 对比项 | RRF | Cross-Encoder |
+| --- | --- | --- |
+| 输入 | 多个有序结果列表 | Query 与候选文档 |
+| 使用的信息 | 文档在每一路中的名次 | Query 与文档的完整文本 |
+| 目标 | 合并并协调多路召回 | 精确判断语义相关性 |
+| 计算成本 | 很低 | 较高 |
+| 是否理解文本 | 否 | 是 |
+| 常见位置 | 多路召回后、Rerank 前 | 最终排序前 |
+
+若 BM25 Top 100 与向量 Top 100 合并去重后只有 170 条，并且 Cross-Encoder 有预算为全部 170 个 pair 打分，可以直接执行：
+
+```python
+candidates = deduplicate(bm25_results + vector_results)
+pairs = [(query, doc.text) for doc in candidates]
+scores = cross_encoder.predict(pairs)
+
+final_results = sorted(
+    zip(candidates, scores),
+    key=lambda item: item[1],
+    reverse=True,
+)
+```
+
+此时 RRF 不是必需步骤，原召回分数和名次都不会决定最终顺序。
+
+生产环境常保留 RRF，是因为 Cross-Encoder 的预算通常小于多路候选并集。例如 BM25 和向量检索各返回 500 条，去重后有 850 条，而 Cross-Encoder 只能处理 100 条，就可以先取 `RRF Top 100` 再精排到 Top 10。若机械地各取前 50 条，某篇文档在两路分别排第 55 和第 53，虽然两路都认可它，却会被两次硬截断共同漏掉；RRF 会奖励这种“多路都较靠前”的候选。
+
+因此两种合法链路分别是：
+
+```
+候选较少：多路召回 → 合并去重 → Cross-Encoder → Top-K
+候选较多：多路召回 → RRF → 截取预算内候选 → Cross-Encoder → Top-K
+```
+
+RRF 经典论文见 [Reciprocal Rank Fusion](https://research.google/pubs/reciprocal-rank-fusion-outperforms-condorcet-and-individual-rank-learning-methods/)。Cross-Encoder 无论多准确，都不能找回从未进入候选并集的文档。
+
+### 2.5 排序与 Top-K 截断不是同一动作
+
+RRF 和 Rerank 的核心动作都是重新排序；真正减少候选数量的是排序后的 Top-K 截断。
+
+```
+召回：尽可能找全相关文档
+RRF：融合多路结果并形成统一排名
+Rerank：对候选结果精确排序
+Top-K：按上下文、延迟和噪声预算保留结果
+```
+
+RRF 后候选只有 30 条时，可以全部交给 Reranker；Rerank 后也可以暂不截断。两者的价值首先是让更相关的候选排在前面，“缩小候选集”只是后续按预算取 Top-K 的结果。
+
 ## 3. 机制流程
 
 ```
@@ -132,12 +185,15 @@ def enhanced_retrieve(question):
 - 你先分别接触了知识图谱、HyDE 和 RRF，随后把它们放入一条完整检索链路中比较。
 - 关键区分：HyDE 发生在召回前，知识图谱是一条独立召回路径，RRF 发生在多路召回之后。
 - 进一步理解：RRF 解决分数不可比和多路融合，不负责判断最终语义相关性；因此后面仍需 rerank。
+- 最终修正：RRF 和 Rerank 都负责排序，Top-K 才负责截断；当 Cross-Encoder 能覆盖全部去重候选时可以省略 RRF，否则 RRF 常作为低成本预算闸门。
 
 ## 7. 常见误区与排查思路
 
 - 把 HyDE 文本当作证据引用；
 - 把知识图谱当成所有非结构化问答的替代品；
 - 直接相加 BM25 与 cosine 原始分数；
+- 把 RRF 和 Rerank 都描述成“缩小候选集”，忽略排序与 Top-K 截断的区别；
+- 候选并集远超 Cross-Encoder 预算时仍跳过融合，靠每路固定配额硬截断；
 - 融合后不做父文档去重，导致一个文档占满 topK；
 - 不记录 retrieval route，无法定位增强路径的真实贡献。
 
@@ -156,3 +212,5 @@ def enhanced_retrieve(question):
 3. 为什么 RRF 后仍需要 rerank？
 4. 知识图谱最适合回答哪类问题？
 5. 如何判断某条增强路径是否真正改善了召回？
+6. 哪些条件下可以省略 RRF，直接对多路召回并集做 Cross-Encoder 重排？
+7. RRF、Rerank 与 Top-K 分别改变排名还是候选数量？
