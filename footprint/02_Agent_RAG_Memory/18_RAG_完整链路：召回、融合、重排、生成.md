@@ -233,6 +233,8 @@ hits = vector_db.search(query_vector, filter=filter_expr, top_k=50)
 - [Late Chunking：全文上下文化、Mean Pooling 与边界对齐](20_Late_Chunking：全文上下文化、Mean_Pooling_与边界对齐.md)
 - [父子分块：层级切分、ID 映射与父块回取](19_父子分块：层级切分、ID_映射与父块回取.md)
 - [Contextual Retrieval：Contextual Embeddings、Contextual BM25 与多路召回](21_Contextual_Retrieval：Contextual_Embeddings、Contextual_BM25_与多路召回.md)
+- [GraphRAG：向量召回、实体链接、关系解析与证据边界](29_GraphRAG：向量召回、实体链接、关系解析与证据边界.md)
+- [Self-RAG：按需检索、Reflection Token 与分段束搜索](30_Self-RAG：按需检索、Reflection_Token_与分段束搜索.md)
 
 ## 9. 复习检查问题
 

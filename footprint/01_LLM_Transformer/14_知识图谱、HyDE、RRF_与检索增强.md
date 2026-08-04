@@ -204,6 +204,8 @@ def enhanced_retrieve(question):
 - [Bi-encoder、Cross Encoder 与重排](13_Bi-encoder%E3%80%81Cross_Encoder_%E4%B8%8E%E9%87%8D%E6%8E%92.md)
 - [RAG HyDE：假设文档嵌入](../02_Agent_RAG_Memory/23_RAG_HyDE_%E5%81%87%E8%AE%BE%E6%96%87%E6%A1%A3%E5%B5%8C%E5%85%A5.md)
 - [Query Rewrite、HyDE 与 Multi-Query 对比](../02_Agent_RAG_Memory/25_Query_Rewrite%E3%80%81HyDE_%E4%B8%8E_Multi-Query_%E5%AF%B9%E6%AF%94.md)
+- [GraphRAG：向量召回、实体链接、关系解析与证据边界](../02_Agent_RAG_Memory/29_GraphRAG：向量召回、实体链接、关系解析与证据边界.md)
+- [Self-RAG：按需检索、Reflection Token 与分段束搜索](../02_Agent_RAG_Memory/30_Self-RAG：按需检索、Reflection_Token_与分段束搜索.md)
 
 ## 9. 复习检查问题
 
