@@ -4,6 +4,8 @@
 
 HTTP Streaming 是分块响应的泛称；SSE 是 HTTP 上的服务端单向事件流；WebSocket 是全双工长连接；gRPC Streaming 是服务间的强类型单向或双向流。框架响应流、SSE 应用帧和底层网络发送属于不同层。
 
+还要把 HTTP/2 的 `Stream` 与“流式返回”分开：HTTP/2 Stream 是一条连接内用于承载请求/响应 Frame 的逻辑子通道；某个响应是否持续增量发送，则是更上层的消息和应用行为。
+
 ## 2. 原理性解释
 
 - SSE 适合 token、进度和事件推送，EventSource 支持自动重连和 Last-Event-ID；
@@ -25,6 +27,55 @@ gRPC Streaming：typed service stream
 ```
 
 LLM token 推送通常 SSE 足够；多人协作、游戏和实时控制更适合 WebSocket；服务间强类型流式调用适合 gRPC。选型还要考虑认证、客户端生态、重连、代理支持和消息契约。
+
+### HTTP/2 Connection、Stream 与 Frame
+
+HTTP/2 可在一条 TCP 连接中维护多个逻辑 Stream。每个 HTTP/2 Frame 都有固定的 9 字节头，其中包含 31 bit 的 Stream Identifier；多个 Stream 的 `HEADERS`、`DATA` 等 Frame 可以交错进入同一个 TCP 有序字节流，接收端再按 Stream ID 解复用。
+
+```text
+HTTP/2 Connection（通常对应一条 TCP Connection）
+├── Stream 1：HEADERS → DATA → DATA
+├── Stream 3：HEADERS → DATA
+└── Stream 5：HEADERS → DATA → DATA
+
+实际 TCP 字节流：
+[S1 HEADERS][S3 HEADERS][S1 DATA][S5 HEADERS][S3 DATA][S5 DATA]...
+```
+
+因此层级是：
+
+```text
+TCP Connection
+    └── HTTP/2 Connection
+          ├── Stream 1
+          │     └── 多个 Frame
+          ├── Stream 3
+          │     └── 多个 Frame
+          └── Stream 5
+                └── 多个 Frame
+```
+
+HTTP/1.1 为并发请求常建立多条连接；HTTP/2 可以让多个请求/响应共享一条连接：
+
+```text
+HTTP/1.1：TCP 1 → A，TCP 2 → B，TCP 3 → C
+HTTP/2：  TCP 1 → Stream A + Stream B + Stream C
+```
+
+但必须纠正两个误区：
+
+- `Stream` 不等于线程、进程、协程或 TCP 子连接；单线程事件循环也能管理很多 Stream；
+- 多个应用线程不能绕过 HTTP/2 实现随意向同一个 socket 写字节。它们应把并发请求交给 HTTP/2 库，由协议层组帧、调度和串行写入 socket。
+
+```text
+线程 / 协程请求
+      ↓
+HTTP/2 Library：分配 Stream ID、生成 Frame、调度交错
+      ↓
+一个 TCP Socket
+```
+
+TCP 不理解 Stream，只提供有序字节流；复用和解复用都由 HTTP/2 层完成。每个 Stream 还有自己的 `idle → open → half-closed → closed` 状态，`RST_STREAM` 可以终止单个 Stream 而不必关闭整条连接。
 
 ### StreamingResponse 与生成器对象
 
@@ -53,6 +104,8 @@ data: {"percent":50}
 空行（`\n\n`）结束一帧。`text/event-stream` 只设置 Content-Type，不会自动添加 `event:` / `data:`。序列化与包帧责任应固定在一层，避免重复 `json.dumps` 或重复前缀。
 
 原生 EventSource 只发 GET；POST JSON 流通常用 `fetch` 读取 response body 并自行解析 SSE。`[DONE]` 是应用约定，不是 SSE 标准；也可以发送结构化 `event: done`。
+
+SSE 是可选的消息交付方式，不是“异步任务”或“工具协议”的必选项。如果服务器只需在计算结束时返回一个结果，普通 HTTP JSON Response 更简单；只有需要在最终结果前持续发送进度、通知、增量结果或订阅事件时，SSE 才带来价值。协议是否支持 SSE 与某次调用是否必须使用 SSE，是两件事。MCP 的版本化取舍见 `../02_Agent_RAG_Memory/03_Function_Calling_与_MCP_工具接入.md`。
 
 响应开始后发生异常，应通过 error 事件或断开表达。客户端必须同时处理建连前 HTTP 错误、建连后 error、缺少完成事件的断开和重连去重。客户端断开会取消流 Task，但已进入 `to_thread` 的同步函数通常不能被强制停止，上游 SDK 仍需 timeout。
 
@@ -123,4 +176,18 @@ async def job_events(job_id: str, request: Request):
 
 ## 6. 你在讨论中的理解推进
 
-你从 HTTP、SSE、WebSocket 的表面比较推进到完整分层：模型 token 流、应用事件流、协议帧和网络发送并非同一概念；实时性还取决于包帧、缓冲、取消和背压。
+你从 HTTP、SSE、WebSocket 的表面比较推进到完整分层：模型 token 流、应用事件流、SSE 帧、HTTP/2 Stream/Frame 和 TCP 字节流并非同一概念。多个线程或协程可产生并发请求，但真正把多个 Stream 复用到一条连接的是 HTTP/2 实现；SSE 也只在需要多事件交付时使用，普通请求仍可一次性返回。
+
+## 7. 关联知识点
+
+- `02_RPC_与_gRPC：服务间调用.md`：gRPC 调用抽象与 HTTP/2 承载；
+- `../02_Agent_RAG_Memory/03_Function_Calling_与_MCP_工具接入.md`：MCP 为何曾使用 SSE 以及无状态化演进；
+- `12_WebRTC：ICE、STUN、TURN、媒体与_DataChannel.md`：实时音视频和 P2P 数据通道；
+- `../03_Python/10_异步生成器、asynccontextmanager_与_yield_生命周期.md`：异步生成器生命周期；
+- `../03_Python/09_Semaphore、Queue_与异步背压.md`：有界队列与端到端背压。
+
+## 8. 参考资料
+
+- [RFC 9113：HTTP/2](https://www.rfc-editor.org/rfc/rfc9113)
+- [HTML Living Standard：Server-sent events](https://html.spec.whatwg.org/multipage/server-sent-events.html)
+- [MDN：Using server-sent events](https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events/Using_server-sent_events)

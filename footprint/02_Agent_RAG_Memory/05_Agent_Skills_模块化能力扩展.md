@@ -37,9 +37,22 @@ skill-name/
 
 因此，Skill 处于任务方法层，Tool 处于动作层，MCP 处于外部能力接入协议层，三者可以组合使用。
 
-## 5. 关联知识点
+## 5. 渐进式披露与按需加载
+
+支持 Skill 的 Agent Runtime 通常不会在启动时把所有完整 `SKILL.md` 放进模型上下文，而是先暴露轻量的名称和描述，让模型或用户选中后再加载正文及相关资源：
+
+```text
+name + description → 发现与路由
+完整 SKILL.md      → 调用后加载任务方法
+references/assets  → 按任务需要继续读取
+普通 Tool / MCP    → 执行真实动作
+```
+
+这能控制基础上下文成本，但具体 listing 预算、调用工具和压缩后恢复方式属于各宿主实现。Claude Code 的确定性规则和 `Skill` tool 机制统一维护在 `../08_Claude_Code_Internals/08_Claude_Code_Skills：发现预算、调用控制与安全边界.md`，本文件不重复产品细节。
+
+## 6. 关联知识点
 
 - `01_Prompt_工程：User_Prompt_与_System_Prompt.md`
 - `03_Function_Calling_与_MCP_工具接入.md`
 - `02_Agent_的端到端任务能力.md`
-- `../08_Claude_Code_Internals/8_Claude_Code_Skills：发现预算、调用控制与安全边界.md`
+- `../08_Claude_Code_Internals/08_Claude_Code_Skills：发现预算、调用控制与安全边界.md`

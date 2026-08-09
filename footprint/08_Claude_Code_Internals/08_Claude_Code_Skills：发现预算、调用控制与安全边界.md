@@ -14,6 +14,61 @@ Claude Code 中的 Skill 有两个不同阶段：
 
 默认情况下，Skill 正文不会因为文件存在就全部常驻上下文。模型先根据 listing 中的元数据发现 Skill，调用后才加载正文。
 
+### 1.1 预算判断发生在请求组装之前
+
+Skill listing 的长度判断属于 prompt/context assembly 的预处理，不是把原始列表发送给模型后再让模型压缩：
+
+```text
+扫描可用 Skills
+    ↓
+读取 frontmatter：name / description / when_to_use
+    ↓
+应用单项 description 上限
+    ↓
+构造候选 listing 并计算总字符数
+    ├── 未超预算：直接采用
+    └── 超预算：按使用频率降级 description，名称保留
+    ↓
+把最终 listing 组装进模型上下文
+    ↓
+发送 API 请求
+```
+
+因此模型从一开始看到的就是裁剪后 listing，并不知道某段 description 原本多长。`/context` 的 Skills 行显示预算应用后的实际大小，这也与该执行顺序一致。
+
+这与会话进行一段时间后触发的 auto-compaction 是两套机制：前者压缩“待暴露的能力索引”，后者清理或摘要“已经进入历史的对话和工具结果”。压缩后 Skill 正文的重挂载规则详见 `04_Claude_Code_上下文压缩、Microcompact_与状态恢复.md`。
+
+### 1.2 `Skill` tool 是按需加载器
+
+Claude Code 使用现有的内置 `Skill` tool 运行 Skill，而不是为每个 Skill 新增一个独立工具 schema：
+
+```text
+最终 Skill listing 进入上下文
+    ↓
+LLM 根据 name + description 做语义路由
+    ↓
+tool call：Skill(code-review)
+    ↓
+Claude Code 找到 SKILL.md
+    ↓
+展开 $ARGUMENTS、命名参数和动态上下文
+    ↓
+渲染后的完整 Skill 作为一条消息进入会话
+    ↓
+LLM 按指令调用 Read / Grep / Bash / MCP 等真实工具
+```
+
+`Skill` tool 通常不直接执行 Skill 的业务逻辑。对于代码审查 Skill，它负责加载审查流程；真正的读取、搜索、测试和报告仍由模型调用普通工具完成。整个架构可概括为：
+
+```text
+轻量 Skill 索引
+  + LLM 路由
+  + Skill tool 按需加载
+  + 普通工具执行
+```
+
+Skill 被调用后，渲染正文会留在会话上下文中，后续轮次不会每次重新读取磁盘文件。相同渲染内容被再次调用时，较新版本只添加“已加载”提示；参数或动态上下文变化导致渲染内容不同，才会追加新正文。auto-compaction 后则按“每项最多 5,000 tokens、合计 25,000 tokens、最近调用优先”重新挂载。
+
 ## 2. 单项上限与总 listing 预算是两层限制
 
 当前官方配置把限制分成两层：
@@ -214,14 +269,18 @@ PreToolUse Hook 校验
 - **误区：`user-invocable: false` 会阻止 Claude 调用。** 它只控制用户入口。
 - **误区：`allowed-tools` 会限制其它工具。** 它负责预授权，不负责移除。
 - **误区：禁止自动调用 Skill 就能阻止底层副作用。** 模型可能通过其它工具走到同一能力，仍需权限、Hook 和基础设施权限。
+- **误区：先把原始 Skill listing 发给模型，再由模型压缩。** 单项截断和总预算降级发生在请求上下文组装之前。
+- **误区：每个 Skill 都会新增一个独立工具定义。** Claude Code 通过共同的内置 `Skill` tool 按名称加载 Skill。
+- **误区：`Skill(name)` 会直接执行该任务的业务代码。** 它主要加载渲染后的指令包，随后仍由模型编排普通工具完成工作。
+- **误区：调用后每一轮都会重新读取最新 `SKILL.md`。** 已渲染正文留在会话中；磁盘修改不会自动改写已加载的那一份。
 
 ## 10. 关联知识点
 
 - `../02_Agent_RAG_Memory/05_Agent_Skills_模块化能力扩展.md`
-- `001_Claude_Code_Prompt_前缀缓存与三级上下文.md`
-- `004_Claude_Code_上下文压缩、Microcompact_与状态恢复.md`
-- `006_Claude_Code_Agent_Loop、Query_生命周期与工具编排.md`
-- `../07_Backend_Deploy_Network/8_沙箱、权限与工具执行安全.md`
+- `01_Claude_Code_Prompt_前缀缓存与三级上下文.md`
+- `04_Claude_Code_上下文压缩、Microcompact_与状态恢复.md`
+- `06_Claude_Code_Agent_Loop、Query_生命周期与工具编排.md`
+- `../07_Backend_Deploy_Network/08_沙箱、权限与工具执行安全.md`
 
 ## 11. 参考资料与事实边界
 
@@ -229,6 +288,7 @@ PreToolUse Hook 校验
 - [Claude Code Settings 官方文档](https://code.claude.com/docs/en/settings)
 - [Claude Code Permissions 官方文档](https://code.claude.com/docs/en/permissions)
 - [Claude Code Hooks 官方文档](https://code.claude.com/docs/en/hooks)
+- [Claude Code Tools Reference](https://code.claude.com/docs/en/tools-reference)
 - 本次整理来源：[技术问题解答准则分享对话](https://chatgpt.com/share/6a69fbe0-2524-83ec-b330-b1326ce3d368)
 
 具体默认值、字段名和版本条件属于产品行为，后续升级时应以官方 Settings 与 Skills 页面为准；文中的调用链是对公开行为的机制化表达，不等于 Anthropic 公开了完整内部源码。
