@@ -1,5 +1,7 @@
 # 08.06 Claude Code Agent Loop、Query 生命周期与工具编排
 
+> **源码审查更正（2026-08-15）**：本篇的“模型调用—工具执行—回填结果—继续调用”是公开 API/SDK 能够支持的抽象 Agent Loop；`QueryEngine`、`queryLoop`、`StreamingToolExecutor`、精确状态枚举和恢复分支不在当前公开仓库中。应把它们明确写为某版本逆向材料或推荐的 harness 状态机，不可写成当前 Claude Code 的源码结构。
+
 ## 1. 先给结论
 
 Claude Code 的稳定核心不是某个名为 `queryLoop` 的函数，而是一条由结构化协议驱动的 Agent Loop：

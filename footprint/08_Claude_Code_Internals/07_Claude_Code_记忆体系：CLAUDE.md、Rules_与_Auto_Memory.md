@@ -1,5 +1,7 @@
 # 08.07 Claude Code 记忆体系：CLAUDE.md、Rules 与 Auto Memory
 
+> **源码审查更正（2026-08-15）**：本篇主要应以官方 Memory 文档而非本仓库源码为证据。当前可直接证实：`CLAUDE.md`/Rules 是上下文指令而非强制策略，auto memory 位于仓库派生的本机目录，启动时仅加载 `MEMORY.md` 的前 200 行或 25KB，主题文件按需读取，且同一 Git 仓库的 worktree 共享该记忆。任何关于隐藏分类器、向量数据库、排序模型或未公开写入策略的表述都只能是推断。
+
 ## 1. 先给结论
 
 当前官方文档确认 Claude Code 有两类跨会话知识机制：

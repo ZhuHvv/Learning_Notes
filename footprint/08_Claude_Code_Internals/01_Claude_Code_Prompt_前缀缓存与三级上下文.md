@@ -1,5 +1,7 @@
 # 08.01 Claude Code Prompt 前缀缓存与三级上下文
 
+> **源码审查更正（2026-08-15）**：当前公开仓库没有 CLI/harness 源码，不能用它证明请求组装细节。本篇的“精确前缀匹配、三层上下文、模型与 effort 的缓存行为、`/compact` 的影响”应以 Claude Code Prompt Caching 官方文档为准；“20 个 content block 回溯、4 个断点槽位、TTL 环境变量和 API `cache_control` 的全部细节”是 Claude API 层或版本相关资料，不能直接断言为 Claude Code 当前实现。请将这两类证据分开标注。
+
 ## 1. 总体性概念
 
 Claude Code 会在每次模型调用时重新提交当前请求所需的上下文，但模型服务端可以复用与旧请求完全相同的前缀计算结果。为了提高命中率，Claude Code 按“由稳定到易变”的顺序组织请求：

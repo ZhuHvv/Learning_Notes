@@ -1,5 +1,7 @@
 # 08.03 Claude Code 代码检索：ripgrep 与 grep
 
+> **源码审查更正（2026-08-15）**：本篇的 `rg`/`grep` 语法与性能讨论可由 ripgrep 和 grep 的上游资料证明；Claude Code `Grep` 的能力应只依据当前 Tools Reference。公开仓库中没有 `Grep` 工具的实现，所以“底层如何调用 ripgrep、并发策略、RAG 是否存在或为何未使用”不能写成项目源码结论；它们是产品行为说明或架构推断，应与可验证的工具契约分开。
+
 ## 1. 一句话定位
 
 - `grep` 是 Unix/Linux 生态中的通用文本过滤器，尤其适合标准输入、Shell 管道和强调可移植性的脚本。

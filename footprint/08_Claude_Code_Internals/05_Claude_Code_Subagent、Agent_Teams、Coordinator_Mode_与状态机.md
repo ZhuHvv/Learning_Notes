@@ -1,5 +1,7 @@
 # 08.05 Claude Code Subagent、Agent Teams、Coordinator Mode 与状态机
 
+> **源码审查更正（2026-08-15）**：当前公开文档可证实：普通 subagent 有独立上下文、Agent Teams 有 lead／teammate／共享 task list／mailbox，且 team 创建须经用户确认；当前文档还明确普通 subagent **不能再生成 subagent**。`<task-notification>` XML、`COORDINATOR_MODE`、内部环境变量、四阶段提示词和 transcript 路由不是公开稳定协议，必须降级为特定版本逆向线索。不要为 SDK 或插件编写依赖 XML 文本或 Coordinator 内部开关的逻辑。
+
 ## 1. 先给出结论
 
 Claude Code 当前存在几种容易被混为一谈的多 Agent 机制：

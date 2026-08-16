@@ -1,5 +1,7 @@
 # 08.08 Claude Code Skills：发现预算、调用控制与安全边界
 
+> **源码审查更正（2026-08-15）**：当前 `anthropics/claude-code` GitHub 仓库公开的是插件、示例和维护脚本，不含 Claude Code CLI/harness 的完整实现。本篇只能把官方 Skills、Tools、Permissions 与 Hooks 文档列为当前产品行为的证据。`description + when_to_use` 的 **1,536 字符截断**、`disable-model-invocation`、`user-invocable` 和 `allowed-tools` 有公开文档依据；下文关于 `skillListingBudgetFraction`、`skillOverrides`、按调用频率移除描述、`/doctor` 的 listing 计费，以及 `SLASH_COMMAND_TOOL_CHAR_BUDGET` 的结论，没有在当前公开仓库或官方 Skills 文档中得到验证，不得作为当前配置接口或稳定运行机制使用。应改写为“特定构建的逆向线索，待以目标版本实测验证”。
+
 ## 1. 一句话定位
 
 Claude Code 中的 Skill 有两个不同阶段：
