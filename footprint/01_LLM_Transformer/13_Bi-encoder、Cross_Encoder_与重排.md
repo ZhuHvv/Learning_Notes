@@ -105,3 +105,4 @@ Top-N 只限制数量，不限制长度。过长候选应回取相关章节或�
 
 - [词向量与文本 Embedding 演进：Word2Vec、GloVe、BERT、SBERT、SimCSE 与 BGE](10_%E8%AF%8D%E5%90%91%E9%87%8F%E4%B8%8E%E6%96%87%E6%9C%AC_Embedding_%E6%BC%94%E8%BF%9B%EF%BC%9AWord2Vec%E3%80%81GloVe%E3%80%81BERT%E3%80%81SBERT%E3%80%81SimCSE_%E4%B8%8E_BGE.md)
 - [Contextual Retrieval：Contextual Embeddings、Contextual BM25 与多路召回](../02_Agent_RAG_Memory/21_Contextual_Retrieval%EF%BC%9AContextual_Embeddings%E3%80%81Contextual_BM25_%E4%B8%8E%E5%A4%9A%E8%B7%AF%E5%8F%AC%E5%9B%9E.md)
+- [Rerank 方法：ColBERT、Pooling 与评分头](17_Rerank%20%E6%96%B9%E6%B3%95%EF%BC%9AColBERT%E3%80%81Pooling%20%E4%B8%8E%E8%AF%84%E5%88%86%E5%A4%B4.md)

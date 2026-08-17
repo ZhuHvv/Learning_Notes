@@ -235,6 +235,9 @@ hits = vector_db.search(query_vector, filter=filter_expr, top_k=50)
 - [Contextual Retrieval：Contextual Embeddings、Contextual BM25 与多路召回](21_Contextual_Retrieval：Contextual_Embeddings、Contextual_BM25_与多路召回.md)
 - [GraphRAG：向量召回、实体链接、关系解析与证据边界](29_GraphRAG：向量召回、实体链接、关系解析与证据边界.md)
 - [Self-RAG：按需检索、Reflection Token 与分段束搜索](30_Self-RAG：按需检索、Reflection_Token_与分段束搜索.md)
+- [时间感知 RAG：版本、as_of 与硬过滤](32_时间感知%20RAG：版本、as_of%20与硬过滤.md)
+- [RAG 冲突证据：事实级检测、信源依赖与仲裁](33_RAG%20冲突证据：事实级检测、信源依赖与仲裁.md)
+- [MMR：相关性与多样性选择](34_MMR：相关性与多样性选择.md)
 
 ## 9. 复习检查问题
 

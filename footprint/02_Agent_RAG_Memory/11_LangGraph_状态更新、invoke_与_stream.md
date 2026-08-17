@@ -36,35 +36,9 @@ Tool 接收参数并返回 observation；Agent node 结合模型、Prompt 和上
 
 ### Checkpoint 的恢复语义
 
-一个可用 checkpoint 至少回答：
+本篇只保留它与状态更新、流式输出的关系：节点的 token 或自定义事件已经流出，不代表 State 已提交，也不代表 checkpoint 已保存；对外事件名必须如实反映这个顺序。
 
-1. 保存哪些业务状态、阶段和外部副作用进度；
-2. 在节点、阶段还是时间间隔边界保存；
-3. 保存时是否仍有并发 Task 修改 state；
-4. 恢复后从哪个节点继续，哪些资源重建；
-5. 代码升级后旧快照怎样迁移；
-6. 是否可能重复请求、写库、发消息或扣费。
-
-适合持久化的是字符串、数字、枚举、列表、字典和按协议编码的 datetime/UUID。不应直接持久化 Queue、Task、Future、文件/socket、Session、锁和进程绑定 client。
-
-### 序列化、快照一致性与幂等
-
-```text
-领域状态
-  → 只选允许持久化字段
-  → 编码 datetime / UUID / Enum
-  → schema_version 校验
-  → JSON-compatible object
-  → 数据库驱动
-```
-
-`json.dumps(value, default=str)` 只让本次调用临时字符串化未知对象，不会修改原对象，也不保证可逆。JSONB 应接收 dict/list/标量，而不是先 dumps 后得到的整个 JSON 字符串。
-
-并发 Task 仍修改嵌套 state 时，`dict(state)` 浅拷贝也不是一致快照。常用策略是在节点/阶段收敛后保存、不可变更新、加锁复制、单一 reducer 或事件日志。
-
-恢复可能重复外部副作用，应使用幂等键、步骤状态、结果缓存、outbox、去重表或补偿操作，并明确至少一次/至多一次语义。Checkpoint 不能自动回滚已发生的外部动作。
-
-给同步保存函数套 `async def` 并直接调用，数据库 I/O 仍会阻塞事件循环；应使用异步驱动/Session，或在确认线程安全后把完整同步事务隔离到线程池。
+LangGraph 的 checkpoint、super-step、并行写入、`thread_id`、子图命名空间和副作用恢复，见 [02.35 LangGraph Checkpoint：持久化、并发恢复与副作用治理](35_LangGraph_Checkpoint%EF%BC%9A%E6%8C%81%E4%B9%85%E5%8C%96%E3%80%81%E5%B9%B6%E5%8F%91%E6%81%A2%E5%A4%8D%E4%B8%8E%E5%89%AF%E4%BD%9C%E7%94%A8%E6%B2%BB%E7%90%86.md)。该文统一说明可持久化边界、快照一致性和幂等设计，避免在两篇笔记中重复维护。
 
 ## 3. 机制流程
 

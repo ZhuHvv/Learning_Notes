@@ -18,6 +18,12 @@
 | Pydantic AI | Typed Agent / Workflow | Python 类型安全、结构化输出与可观测性 |
 | Microsoft Agent Framework | Agent + Multi-agent Workflow | Python/.NET 的生产级 Microsoft Agent 框架 |
 
+### LangChain 与 LangGraph：高层组件与底层编排并不冲突
+
+LangChain 更偏高层的 LLM/Agent 开发组件：Model、Tool、Retriever、Prompt、Middleware 与高层 Agent 封装；LangGraph 更偏运行时和流程控制：State、Node、Edge、条件分支、循环、checkpoint、暂停与恢复。它们不是互斥选型：本次讨论对应的 LangChain v1 高层 Agent 实现可构建在 LangGraph 运行时之上。
+
+可以按问题区分：只需“模型调用几个工具并返回结果”时，优先用高层 Agent 组件；需要精确决定重试、跳转、人工审核、任务恢复和多 Agent 状态共享时，直接设计 LangGraph 状态图。后者的状态更新、持久化与流式语义见 `11_LangGraph_状态更新、invoke_与_stream.md`。
+
 调研当时的生态信号如下。数字是带日期的快照，不代表当前值：
 
 | 框架 | 2026-07-05 附近记录 | 适合场景 |
