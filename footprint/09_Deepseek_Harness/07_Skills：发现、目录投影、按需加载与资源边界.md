@@ -4,6 +4,15 @@
 
 dsh 的 Skill 不是启动时把所有 Markdown 塞进 system prompt，而是三层协议：`ctx.skills` 合并 host/preset/agent scope 的 provider catalog，`skill-filesystem` 只发现并解析摘要，`tool-skill` 把可调用摘要作为 durable catalog 注入 Session；真正的正文在模型调用 `skill(name)` 或用户显式 `/name` 手势时才重新读取，并仅给出资源基址和按需加载指导。
 
+## 源码阅读路线
+
+按以下顺序打开源码；链接固定到本次核对时的实际行号。
+
+1. [读取 scope 可见目录](<D:/codes/deepseek-harness/packages/skill/skill/src/index.ts#L473>)：packages/skill/skill/src/index.ts。
+2. [本地来源与正文读取](<D:/codes/deepseek-harness/packages/skill/skill-filesystem/src/index.ts#L1>)：packages/skill/skill-filesystem/src/index.ts。
+3. [模型目录与用户手势](<D:/codes/deepseek-harness/packages/skill/tool-skill/src/index.ts#L77>)：packages/skill/tool-skill/src/index.ts。
+4. [冷会话的用户可调用列表](<D:/codes/deepseek-harness/packages/api/session-controller/src/skill-catalog.ts#L36>)：packages/api/session-controller/src/skill-catalog.ts。
+
 ## 2. 源码调用链与数据流
 
 ### 2.1 Provider registry
@@ -109,15 +118,21 @@ Web 使用 Agent Preset 后，`ctx.skills` registry 留在 Host；每个 preset 
 4. 比较模型调用 `skill` 与用户输入 `/name` 的 invocation predicate、Session source 和正文落点。
 5. 修改一个 Skill 的 description 与 body，分别推演 watcher、catalog replacement 和下一次 load 的差异。
 
+## 用户入口与 Web 冷会话读取
+
+Web 的用户可调用 Skill 列表由 Session Controller 的 skill-catalog 路径提供。live Agent 存在时用其 scope；冷会话使用记录的 preset standing scope，因此列 Skill 不应启动 Agent 或模型请求。
+
+`tool-skill` 的目录与手势 listener 保留 pre-step 决策中的 `startsRequestSeries`。完整 replacement catalog 指的是最新可见目录，不是删除原始 user/message 记录；正文变化也不会追溯重写先前 tool/result。阅读冷会话能力时，应同时检查 registry、preset 和 API consumer，而不只看 filesystem provider。
+
 ## 7. 证据索引
 
-- `packages/skill/skill/src/index.ts`
-- `packages/skill/skill-filesystem/src/index.ts`
-- `packages/skill/tool-skill/src/index.ts`
-- `packages/skill/skill-badge/src/index.ts`
-- `packages/core/scope/src/index.ts`
-- `packages/core/tools/src/index.ts`
-- `packages/fs/fs-observation-policy/src/index.ts`
-- `packages/bundle/base/cordis.patch.yml`
-- `packages/bundle/web-app/cordis.patch.yml`
-- `packages/preset/agent-presets/src/index.ts`
+- [packages/skill/skill/src/index.ts](<D:/codes/deepseek-harness/packages/skill/skill/src/index.ts#L1>)
+- [packages/skill/skill-filesystem/src/index.ts](<D:/codes/deepseek-harness/packages/skill/skill-filesystem/src/index.ts#L1>)
+- [packages/skill/tool-skill/src/index.ts](<D:/codes/deepseek-harness/packages/skill/tool-skill/src/index.ts#L1>)
+- [packages/skill/skill-badge/src/index.ts](<D:/codes/deepseek-harness/packages/skill/skill-badge/src/index.ts#L1>)
+- [packages/core/scope/src/index.ts](<D:/codes/deepseek-harness/packages/core/scope/src/index.ts#L1>)
+- [packages/core/tools/src/index.ts](<D:/codes/deepseek-harness/packages/core/tools/src/index.ts#L1>)
+- [packages/fs/fs-observation-policy/src/index.ts](<D:/codes/deepseek-harness/packages/fs/fs-observation-policy/src/index.ts#L1>)
+- [packages/bundle/base/cordis.patch.yml](<D:/codes/deepseek-harness/packages/bundle/base/cordis.patch.yml#L1>)
+- [packages/bundle/web-app/cordis.patch.yml](<D:/codes/deepseek-harness/packages/bundle/web-app/cordis.patch.yml#L1>)
+- [packages/preset/agent-presets/src/index.ts](<D:/codes/deepseek-harness/packages/preset/agent-presets/src/index.ts#L1>)

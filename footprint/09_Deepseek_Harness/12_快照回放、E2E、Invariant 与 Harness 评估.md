@@ -4,6 +4,15 @@
 
 dsh 的验证策略是一组互补证据：unit/coverage 检查局部契约，Loader composition 和 built smoke 检查真实装配，keyless snapshot 用 recorded Session JSONL 重放模型流并固定外部 transcript，real-API E2E 检查真实 provider 与外部世界结果，runtime invariant 监视跨事件关系；这些能证明特定路径与固定场景，不等于已经存在一个独立、通用的 Agent 质量 evaluator。
 
+## 源码阅读路线
+
+按以下顺序打开源码；链接固定到本次核对时的实际行号。
+
+1. [Session 驱动场景与独立工作区证据](<D:/codes/deepseek-harness/snapshots/AGENTS.md#L1>)：snapshots/AGENTS.md。
+2. [内嵌流回放](<D:/codes/deepseek-harness/packages/test-support/llm-replay/src/index.ts#L34>)：packages/test-support/llm-replay/src/index.ts。
+3. [实际选择的场景范围](<D:/codes/deepseek-harness/vitest.snapshot.config.ts#L47>)：vitest.snapshot.config.ts。
+4. [有关系才发布 invariant](<D:/codes/deepseek-harness/scripts/verify-package-invariants.ts#L1>)：scripts/verify-package-invariants.ts。
+
 ## 2. 源码调用链与数据流
 
 ### 2.1 测试层级
@@ -19,36 +28,39 @@ dsh 的验证策略是一组互补证据：unit/coverage 检查局部契约，Lo
 | Browser snapshot | Chromium 中 replayed Host/Client/UI | 非浏览器 front door |
 | Runtime invariant | 运行时跨事件/可变关系 | 纯函数、配置结构和外部世界真值 |
 
-repository policy 明确：非平凡 model/protocol/human-visible change 必须在 runnable example 的 owning snapshot suite 中加入 keyless scenario。package mock test 不能替代 assembled transcript；反过来 snapshot 也不能替代 focused unit/race test。
+repository policy 明确：非平凡 model/protocol/human-visible change 必须在对应 Session snapshot owner 中加入 keyless scenario。package mock test 不能替代 assembled transcript；反过来 snapshot 也不能替代 focused unit/race test。
 
 ### 2.2 LLM replay
 
-```text
-record 阶段（需要真实模型）
-  → 运行真实 Agent composition
-  → Session JSONL 保存 assistant/chunk、request/header、tool events...
+`llm-replay` 根据选择的 Session generation，经格式 catalog 读取当前逻辑事件，再从 v2 的 assistant/message、assistant/attempt 内嵌 stream 展开 StreamChunk。一个 step 内多个重试尝试各自保留，不能按 turn/step 把它们合成一条成功流。
 
-replay 阶段（无 key）
-  → dsh-llm-replay 读取 session.jsonl
-  → 按 (turn, step) 聚合 assistant/chunk
-  → 重建 StreamChunk sequence
-  → 真 Agent Loop + 真 tools + 真 persistence 再运行
-  → diff 新 Session log / JSON-RPC / stdout / UI snapshot
-  → assertConsumed() 保证脚本没有少调用
+```text
+选最高规范 generation → sessionFormatCatalog → 当前逻辑事件
+ → expandAssistantStream(message/attempt.stream) → 每次调用的 replay entry
+ → shipped dsh profile + scenario patch → 真 Loop / tools / persistence
+ → 比对日志、协议、UI 与独立工作区结果
 ```
 
-普通成功调用必须以 finish chunk 结束。纯 pre-chunk throw、hang/cancel timing 不能从 JSONL chunks 推出，使用 `replay.override.json` replacement/patch 明确脚本。成功 compaction summarizer 只有在 `compaction/summary.llmStreamCall: true` 且有完整 `rawOutput` 时才可重建为本地 LLM call；外部/template summarizer 不能被误认。
+throw-before-chunk、hang/cancel timing 等无法只靠 durable stream 恢复的行为，需要 replay.override.json。成功 compaction 调用只有在明确 llmStreamCall 标记和 rawOutput 足够时才可恢复，不能把模板摘要当作真实模型调用。
 
-嵌套 Agent 每个 Session 有独立 `session.N.jsonl`。live Session id 每次随机，replay 当前按首次调用顺序把 live session 绑定到 recorded script；并发 sibling 首次调用会造成非确定性，因此 README 明确把并发 subagent script binding 列为限制。
+每个嵌套 Session 独立成 role；当前 replay 仍按首次调用顺序绑定 live Session 与 recorded script，并发 sibling 的首次调用顺序是已知限制。assertConsumed() 防止只运行了脚本前半段却判成功。
 
 ### 2.3 Snapshot surfaces
 
-- ACP snapshot：启动真实 automation-server example，重放模型流，diff normalized JSON-RPC、stdout 与 repersisted log。
-- Headless snapshot：explicit example composition + internal JSONL driver，固定 canonical backend events；产品 `dsh --profile headless` 由 CLI acceptance 另测。
-- Web snapshot：真实 Host + replay LLM + Chromium，固定 Session、UI 语义输出和交互状态；CI replay 模式禁止写 expected files。
-- JSON-RPC/SDK/CLI snapshot：各 front door 固定自己的 wire 与 presentation，而不是共享一份“万能快照”。
+顶层 `snapshots/` 只放以 Session JSONL 为输入与预期持久输出的场景。被测进程统一经 `dsh` + shipped profile + 可选 scenario patch 启动；不要按旧 examples 的内部 driver 另建产品入口。
 
-一个 `text-turn` 场景 pin 完整 system prompt/tool schemas；多数 fixture 把易变 header 内容 tokenized，避免一次 prompt 文案变化造成全库无意义 diff。record 与 refresh 是不同操作：模型 transcript 变化才 record；输入仍有效而仅派生输出变化可 refresh。两种 diff 都必须审查。
+| 落点 | 关注内容 |
+| --- | --- |
+| snapshots/session/headless.snapshot.ts | headless 的 Session 与工作区场景 |
+| snapshots/acp/acp.snapshot.ts | ACP（Agent Client Protocol，代理客户端协议）协议与持久结果 |
+| snapshots/sdk/sdk.snapshot.ts | SDK 的 wire/event/run 投影 |
+| apps/web/tests/ | 浏览器 assembled UI 场景，按构建模式选择 |
+
+父文件名为 session[.vN].jsonl，子文件名为 session.<ordinal>[.vN].jsonl。record/refresh 选择最高规范版本，发布版本命名结果并保留已提交旧代；固定历史格式的 owner 在 snapshot.yml 声明版本和迁移覆盖。
+
+修改工作区的场景声明 workspace.final: true 并提交 workspace.expected/，record/refresh 不改写这份独立结果证据。模型说完成、工具输出声称完成，都不能替代真实文件比对。非 Session 驱动的 CLI、ARIA（可访问性语义）、几何或生成器 expected 输出留在各自 owner。
+
+record 使用真实模型，refresh 用既有 replay 输入更新派生输出，普通 replay 不写 expected。它们的用途和证据成本不同；本轮未执行 record/refresh。
 
 ### 2.4 Real-API E2E 与 mock server
 
@@ -66,7 +78,7 @@ dsh-invariants service
   → fail(message) 抛 InvariantError{ code: INVARIANT, packageName }
 ```
 
-每个 workspace package 都发布 `./invariant` companion；有可观测关系时检查，纯 utility/薄 provider 若没有合理关系则用 package-specific “No runtime invariant” 解释，不造假检查 service/method 是否存在。
+只有存在独立观察可能分歧的运行时关系，包才发布 `./invariant` companion；纯 utility/薄 provider 无此关系时应省略源码、导出与挂载，并在 README 说明。空 installer 或检查 service/method 是否存在不构成有效 invariant。
 
 典型检查：Session seq/turn/step/tool pairing、Agent status/inbox、LLM stream grammar、request reconstruction、tool pipeline/frozen result、compaction bracket/metadata、subagent/workflow child pairing、Goal revision/round、approval asked/decided、Jobs lifecycle。Session 自身始终执行 candidate JSON/surface 基础验证；可选 companion 负责跨记录关系。
 
@@ -84,7 +96,7 @@ Goal/Tool-Ralph README 反而明确写出：complete/blocker 是 worker/model se
 - keyless replay 与 with-key E2E 并存：前者确定、便宜、可 CI；后者检验真实 provider compatibility 与模型能力。
 - one pinned prompt fixture + 其余 tokenized：在 detecting request-shape drift 与控制 snapshot churn 之间取平衡。
 - invariant 归包所有：失败能指向 owner，避免一个中央 checker 导入所有 product package 并复制知识。
-- 只检查权威关系：避免“服务存在”这类自证循环；没有关系时明确为空比伪 invariant 更诚实。
+- 只检查权威关系：避免“服务存在”这类自证循环；没有关系时省略 companion 并说明原因。
 - world-state assertion：Agent 自述不是验证器，尤其是文件修改、安全和 goal completion。
 
 ## 4. 不能推出的结论
@@ -98,7 +110,7 @@ Goal/Tool-Ralph README 反而明确写出：complete/blocker 是 worker/model se
 
 ## 5. 常见误区
 
-- 修改 visible behavior 只补 unit test，不补 runnable example snapshot。
+- 修改 visible behavior 只补 unit test，不补对应 shipped-profile Session snapshot。
 - 用 test-only fake tool 验证 bridge，却不启动 shipping tool/provider composition。
 - 在 E2E 中搜索 assistant 输出的“完成”二字，而不检查文件、命令或外部状态。
 - 遇到 snapshot diff 直接 refresh，不判断是期望行为改变、fixture 漂移还是 bug。
@@ -107,30 +119,35 @@ Goal/Tool-Ralph README 反而明确写出：complete/blocker 是 worker/model se
 
 ## 6. 源码阅读任务
 
-1. 选一个 ACP snapshot，从 scenario config、recorded `session.jsonl`、replay adapter 到 expected stdout/log 完整走一遍。
+1. 选一个 ACP snapshot，从 scenario config、选中的版本化 Session JSONL、replay adapter 到 expected stdout/log 完整走一遍。
 2. 构造 pre-chunk auth error 与 partial_disconnect，解释为什么前者需要 override，而后者能部分从 log 观察。
 3. 比较同一行为的 package unit、Loader composition、built smoke、keyless snapshot 与 real-API E2E 各自防什么回归。
 4. 阅读 Session、Tools、Compaction 三个 invariant companion，判断它们为何检查关系而非重复 input schema。
 5. 为“Agent 修改一个文件并通过测试”设计 eval，明确外部 verifier、重复运行与不能使用的 self-report 指标。
 
+## 本次修订的验证边界
+
+本次修改学习笔记，不修改业务源码、快照或产品文案。执行的文档验证覆盖：目标文件保存与差异、引用文件存在、源码行号范围、专题导航链接、旧失效路径和过时关键结论扫描。
+
+源码测试与快照仅作为核对依据阅读；没有执行真实模型 E2E、整库覆盖率、浏览器运行或跨平台恢复实验。因而本文不宣称当前工作树全部测试通过，也不把 Windows 源码分支当作本机运行结果。项目内 doc-sync 等门禁不扫描本目录，不能冒充对项目外学习笔记的验证。
+
 ## 7. 证据索引
 
-- `docs/testing.md`
-- `vitest.config.ts`
-- `vitest.e2e.config.ts`
-- `vitest.snapshot.config.ts`
-- `packages/test-support/llm-replay/src/index.ts`
-- `packages/test-support/llm-mock-server/src/index.ts`
-- `packages/test-support/acp-snapshot/src/index.ts`
-- `packages/runtime-diagnostics/invariants/src/index.ts`
-- `packages/core/session/src/invariant.ts`
-- `packages/core/agent-loop/src/invariant.ts`
-- `packages/core/tools/src/invariant.ts`
-- `packages/compaction/compaction/src/invariant.ts`
-- `scripts/verify-package-invariants.ts`
-- `examples/acp-agent/tests/acp.snapshot.ts`
-- `examples/headless-agent/tests/`
-- `apps/web/tests/`
-- `packages/workflow/tool-ralph/README.md`
-- `packages/goal/goal/README.md`
-
+- [docs/testing.md](<D:/codes/deepseek-harness/docs/testing.md#L1>)
+- [vitest.config.ts](<D:/codes/deepseek-harness/vitest.config.ts#L1>)
+- [vitest.e2e.config.ts](<D:/codes/deepseek-harness/vitest.e2e.config.ts#L1>)
+- [vitest.snapshot.config.ts](<D:/codes/deepseek-harness/vitest.snapshot.config.ts#L1>)
+- [packages/test-support/llm-replay/src/index.ts](<D:/codes/deepseek-harness/packages/test-support/llm-replay/src/index.ts#L1>)
+- [packages/test-support/llm-mock-server/src/index.ts](<D:/codes/deepseek-harness/packages/test-support/llm-mock-server/src/index.ts#L1>)
+- [snapshots/acp/acp.snapshot.ts](<D:/codes/deepseek-harness/snapshots/acp/acp.snapshot.ts#L1>)
+- [packages/runtime-diagnostics/invariants/src/index.ts](<D:/codes/deepseek-harness/packages/runtime-diagnostics/invariants/src/index.ts#L1>)
+- [packages/core/session/src/invariant.ts](<D:/codes/deepseek-harness/packages/core/session/src/invariant.ts#L1>)
+- [packages/core/agent-loop/src/invariant.ts](<D:/codes/deepseek-harness/packages/core/agent-loop/src/invariant.ts#L1>)
+- [packages/core/tools/src/invariant.ts](<D:/codes/deepseek-harness/packages/core/tools/src/invariant.ts#L1>)
+- [packages/compaction/compaction/src/invariant.ts](<D:/codes/deepseek-harness/packages/compaction/compaction/src/invariant.ts#L1>)
+- [scripts/verify-package-invariants.ts](<D:/codes/deepseek-harness/scripts/verify-package-invariants.ts#L1>)
+- [snapshots/sdk/sdk.snapshot.ts](<D:/codes/deepseek-harness/snapshots/sdk/sdk.snapshot.ts#L1>)
+- [snapshots/session/](<D:/codes/deepseek-harness/snapshots/session/>)
+- [apps/web/tests/](<D:/codes/deepseek-harness/apps/web/tests/>)
+- [packages/workflow/tool-ralph/README.md](<D:/codes/deepseek-harness/packages/workflow/tool-ralph/README.md#L1>)
+- [packages/goal/goal/README.md](<D:/codes/deepseek-harness/packages/goal/goal/README.md#L1>)

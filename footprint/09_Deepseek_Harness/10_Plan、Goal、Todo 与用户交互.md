@@ -4,6 +4,15 @@
 
 dsh 把“当前协作模式”“长期完成目标”“本 turn 的执行清单”“需要人类回答的问题”建成四套独立状态：Plan 是 durable mode + review interaction，Goal 是 event-sourced objective + process-local activation + round driver，Todo 是 Session 内 whole-list projection，User Questions/Commands 是前门交互 seam；它们共享 Agent/Session，但没有一个万能 planning state。
 
+## 源码阅读路线
+
+按以下顺序打开源码；链接固定到本次核对时的实际行号。
+
+1. [完整目标投影状态](<D:/codes/deepseek-harness/packages/goal/goal/src/types.ts#L103>)：packages/goal/goal/src/types.ts。
+2. [空闲时继续目标](<D:/codes/deepseek-harness/packages/goal/goal-round-driver/src/index.ts#L76>)：packages/goal/goal-round-driver/src/index.ts。
+3. [协作模式与 review](<D:/codes/deepseek-harness/packages/plan/plan-mode/src/index.ts#L1>)：packages/plan/plan-mode/src/index.ts。
+4. [人类问题权限](<D:/codes/deepseek-harness/packages/interaction/user-questions/src/index.ts#L34>)：packages/interaction/user-questions/src/index.ts。
+
 ## 2. 源码调用链与数据流
 
 ### 2.1 Plan mode
@@ -39,7 +48,7 @@ create_goal(objective, max_goal_rounds?)
   → 同一 Session 中继续工作
 ```
 
-Goal 每次 mutation 写完整 snapshot：id、revision、objective、phase、roundsStarted、maxGoalRounds、blockedReason 等。update 使用 `{ id, revision }` compare-and-set，避免模型基于旧状态覆盖新 revision。phase 为 active/paused/blocked/complete；clear 使用 revisioned tombstone。
+Goal mutation 写完整生命周期 snapshot，包括 id、revision、objective、phase、maxGoalRounds、blockedReason 等；当前 roundsStarted 由投影结合 admitted 的 goal-sourced user/message 推进，不能把它理解成只读最后一条 goal/change 就足够。update 使用 `{ id, revision }` compare-and-set，避免模型基于旧状态覆盖新 revision。phase 为 active/paused/blocked/complete；clear 使用 revisioned tombstone。
 
 durable state 与 activation 有意分离。activation 不是持久化字段：fresh cache、session start、resume、fork、driver replacement 都会 disarm，即使 durable phase 仍为 active。人类明确要求继续时必须通过 `resume` mutation 再 armed，防止重启后无授权自动续跑。
 
@@ -102,18 +111,23 @@ round driver 只在 active + armed + idle + 未超 cap 时排下一条 `<goal_ro
 4. 对比 Plan review、ask_user_question 与 approval.request 的 caller authority、durable event 与 UI provider。
 5. 比较 Todo projection 在 `turn/start` 清空与 raw log 保留的差别。
 
+## 共享投影与 SDK 观察
+
+Goal 的投影状态同时保留 current、seenGoalIds 和首次严格重放 failure。它需要拒绝非法 revision/复用身份等错误，而不是对任意 goal/change 做宽松 last-write-wins。Todo 的 whole-list 覆盖规则不能套到 Goal 上。
+
+Web 的 Goal 控制和 SDK 的会话运行都需要区分 durable phase、进程内 activation 与 whole-agent idle。一个 physical turn/end 不一定意味着所有子代理和目标续跑工作都结束；自动化 consumer 应使用对应高层 run 的活动区间，而不是收到第一个 turn/end 就截断结果。
+
 ## 7. 证据索引
 
-- `packages/plan/plan-mode/src/index.ts`
-- `packages/goal/goal/src/index.ts`
-- `packages/goal/goal-round-driver/src/index.ts`
-- `packages/goal/tool-goal/src/index.ts`
-- `packages/todo/tool-todo/src/index.ts`
-- `packages/interaction/user-questions/src/index.ts`
-- `packages/interaction/tool-ask-user/src/index.ts`
-- `packages/interaction/commands/src/index.ts`
-- `packages/interaction/user-approval/src/index.ts`
-- `packages/bundle/base/cordis.patch.yml`
-- `packages/client/ui-plan/README.md`
-- `packages/client/ui-goal/README.md`
-
+- [packages/plan/plan-mode/src/index.ts](<D:/codes/deepseek-harness/packages/plan/plan-mode/src/index.ts#L1>)
+- [packages/goal/goal/src/index.ts](<D:/codes/deepseek-harness/packages/goal/goal/src/index.ts#L1>)
+- [packages/goal/goal-round-driver/src/index.ts](<D:/codes/deepseek-harness/packages/goal/goal-round-driver/src/index.ts#L1>)
+- [packages/goal/tool-goal/src/index.ts](<D:/codes/deepseek-harness/packages/goal/tool-goal/src/index.ts#L1>)
+- [packages/todo/tool-todo/src/index.ts](<D:/codes/deepseek-harness/packages/todo/tool-todo/src/index.ts#L1>)
+- [packages/interaction/user-questions/src/index.ts](<D:/codes/deepseek-harness/packages/interaction/user-questions/src/index.ts#L1>)
+- [packages/interaction/tool-ask-user/src/index.ts](<D:/codes/deepseek-harness/packages/interaction/tool-ask-user/src/index.ts#L1>)
+- [packages/interaction/commands/src/index.ts](<D:/codes/deepseek-harness/packages/interaction/commands/src/index.ts#L1>)
+- [packages/interaction/user-approval/src/index.ts](<D:/codes/deepseek-harness/packages/interaction/user-approval/src/index.ts#L1>)
+- [packages/bundle/base/cordis.patch.yml](<D:/codes/deepseek-harness/packages/bundle/base/cordis.patch.yml#L1>)
+- [packages/client/ui-plan/README.md](<D:/codes/deepseek-harness/packages/client/ui-plan/README.md#L1>)
+- [packages/client/ui-goal/README.md](<D:/codes/deepseek-harness/packages/client/ui-goal/README.md#L1>)

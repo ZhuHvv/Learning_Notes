@@ -1,6 +1,7 @@
 # 08.04 Claude Code 上下文压缩、Microcompact 与状态恢复
 
-> **源码审查更正（2026-08-15）**：官方文档承诺的是会话接近容量时的压缩，以及压缩后 system prompt、根级规则、auto memory、路径规则、嵌套 `CLAUDE.md` 与已调用 Skills 的恢复语义；没有公开 `Microcompact` 这个内部模块及其占位文本、冷热缓存分支、20K 阈值、最近 5 个文件或任务注册表实现。第 3、6、9、11、12、13 节只能作为**特定构建的逆向分析笔记**，不可据此设计依赖这些常量的 harness。
+> 核验：2026-09-05；本地源码 `d7dbd9a`，发行记录至 `2.1.261`。Microcompact 的内部还原材料没有在本次 checkout 中找到对应实现；涉及常量与分支的段落均为未复核假说。
+
 
 ## 1. 先区分三类动作
 
@@ -41,7 +42,9 @@ Claude Code 官方文档确认的稳定行为是：接近上下文上限时，�
 
 ## 3. 版本实现：Microcompact 不是“给每个结果写摘要”
 
-讨论中引用的特定版本还原源码显示，时间型 Microcompact 会把旧工具结果正文替换为固定占位文本：
+> 证据状态：保留原讨论的机制假说。本笔记没有记录可复核的构建 SHA 与源码行号，以下叙述不作为当前实现结论。
+
+旧讨论提出一种清理策略：把旧工具结果正文替换为固定占位文本。该文本未在当前仓库实现中验证；以下只用来说明清理与摘要的区别：
 
 ```text
 [Old tool result content cleared]
@@ -130,6 +133,8 @@ Anthropic 当前的服务端 Context Editing 也采用类似原则：默认按�
 
 ## 6. 版本实现：缓存热时与缓存冷却后的两种思路
 
+> 证据状态：保留原讨论的机制假说。本笔记没有记录可复核的构建 SHA 与源码行号，以下叙述不作为当前实现结论。
+
 直接改写旧消息会改变请求前缀，从而破坏对应位置之后的 Prompt Cache。讨论中引用的特定版本实现因此区分两种思路：
 
 ### 6.1 时间型 Microcompact
@@ -186,9 +191,11 @@ thinking / effort 配置
 
 这样摘要请求有机会读取主会话已建立的 Prompt Cache，只重新处理新增的摘要指令。
 
-该实现中的摘要 Agent 被限制为单轮且不能实际调用工具。这里的目标不是让它继续执行任务，而是让它只根据现有历史生成压缩摘要。
+旧讨论假设摘要 Agent 被限制为单轮且不能实际调用工具；本次未确认该执行限制。这里的目标不是让它继续执行任务，而是让它只根据现有历史生成压缩摘要。
 
 ## 9. 版本实现：为什么缓存共享路径不一定单独设置 20K
+
+> 证据状态：保留原讨论的机制假说。本笔记没有记录可复核的构建 SHA 与源码行号，以下叙述不作为当前实现结论。
 
 讨论中最关键的因果链是：
 
@@ -228,13 +235,13 @@ thinking 配置变化可能使消息缓存失效
 压缩后的上下文不只是：
 
 ```text
-newContext = [summary]
+conceptualRestoredContext = [summary]
 ```
 
-更接近：
+可用下面的概念组合理解，但它不是实际消息数组或确定的重注入顺序：
 
 ```text
-newContext = [
+conceptualRestoredContext = [
   compactBoundary,
   summary,
   reloadedProjectRules,
@@ -267,6 +274,8 @@ newContext = [
 
 ## 11. 版本实现：“最近五个文件”具体是什么意思
 
+> 证据状态：保留原讨论的机制假说。本笔记没有记录可复核的构建 SHA 与源码行号，以下叙述不作为当前实现结论。
+
 讨论中引用的版本实现不是让 LLM 从聊天语义中选出“最重要的五个文件”，而是：
 
 1. 从压缩前的文件读取状态中取得路径和访问时间；
@@ -286,6 +295,8 @@ newContext = [
 “5 个”属于所讨论版本的实现常量。官方文档确认项目根规则、auto memory、Skills 等机制的压缩后行为，但没有把“永远恢复最近 5 个普通文件”承诺为稳定接口。
 
 ## 12. 版本实现：异步任务状态为什么不是从对话猜出来的
+
+> 证据状态：保留原讨论的机制假说。本笔记没有记录可复核的构建 SHA 与源码行号，以下叙述不作为当前实现结论。
 
 压缩后若要提示某个后台任务仍在运行，更可靠的来源是当前任务注册表，而不是扫描旧消息看到“曾经调用过 Agent”后猜测。
 
@@ -328,11 +339,11 @@ Claude API 已公开服务端 Compaction 与 Context Editing。这些能力证�
 
 ## 15. 关联知识点
 
-- `001_Claude_Code_Prompt_前缀缓存与三级上下文.md`
-- `002_Claude_Code_流式输出、max_tokens_与恢复机制.md`
-- `003_Claude_Code_代码检索：ripgrep_与_grep.md`
-- `006_Claude_Code_Agent_Loop、Query_生命周期与工具编排.md`
-- `007_Claude_Code_记忆体系：CLAUDE.md、Rules_与_Auto_Memory.md`
+- [01_Claude_Code_Prompt_前缀缓存与三级上下文.md](01_Claude_Code_Prompt_前缀缓存与三级上下文.md)
+- [02_Claude_Code_流式输出、max_tokens_与恢复机制.md](02_Claude_Code_流式输出、max_tokens_与恢复机制.md)
+- [03_Claude_Code_代码检索：ripgrep_与_grep.md](03_Claude_Code_代码检索：ripgrep_与_grep.md)
+- [06_Claude_Code_Agent_Loop、Query_生命周期与工具编排.md](06_Claude_Code_Agent_Loop、Query_生命周期与工具编排.md)
+- [07_Claude_Code_记忆体系：CLAUDE.md、Rules_与_Auto_Memory.md](07_Claude_Code_记忆体系：CLAUDE.md、Rules_与_Auto_Memory.md)
 - `../02_Agent_RAG_Memory/02_Agent_的端到端任务能力.md`
 - `../02_Agent_RAG_Memory/12_Agent_Memory_四类：短期、情景、语义、程序性.md`
 - `../02_Agent_RAG_Memory/15_MemGPT：上下文窗口作为有限内存.md`
@@ -367,3 +378,11 @@ Claude API 已公开服务端 Compaction 与 Context Editing。这些能力证�
 4. 缓存共享摘要路径为什么不宜随意修改 thinking 和输出参数？
 5. 压缩后，摘要、文件内容和异步任务状态分别来自什么来源？
 6. 为什么“最近五个文件”不能视为长期稳定的 Claude Code 契约？
+
+## 18. 恢复要验证任务状态，也要区分提示与请求
+
+[本地发行记录](D:/codes/claude-code/CHANGELOG.md#L652) 记录 2.1.239 修复：压缩后的 Skill 提醒不应把原调用参数再执行为新请求。恢复 Skill 内容与重跑 Skill 任务是两个动作。
+
+[本地发行记录](D:/codes/claude-code/CHANGELOG.md#L106) 记录 2.1.260 修复：长时间压缩不应被 Workflow 误判成 Agent 卡死后重启。它支持“调度器需要区分压缩和失联”的设计启发，但未公开超时检测算法。
+
+本仓库可实际阅读的状态恢复样本是 [plugins/security-guidance/hooks/diffstate.py](D:/codes/claude-code/plugins/security-guidance/hooks/diffstate.py#L74) → [plugins/security-guidance/hooks/diffstate.py](D:/codes/claude-code/plugins/security-guidance/hooks/diffstate.py#L116)。这里恢复的是插件待审路径与基线，不是 CLI 会话摘要。将相似概念分清，才能避免拿插件状态机填补闭源运行时的空白。

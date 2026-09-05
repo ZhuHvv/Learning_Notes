@@ -4,9 +4,17 @@
 
 dsh 的启动不是“CLI 读取一个大配置文件并创建若干单例”。CLI 先选择 Profile，再按顺序叠加 Bundle patch、profile patch、home patch 和 `--patch` overlay，最后用 Cordis Loader 装载所得插件树。产品差异因此优先表现为 composition，而不是大量 `if (mode === ...)`。
 
+## 源码阅读路线
+
+按以下顺序打开源码；链接固定到本次核对时的实际行号。
+
+1. [命令行 profile 启动](<D:/codes/deepseek-harness/apps/cli/src/profile-boot.ts#L210>)：apps/cli/src/profile-boot.ts。
+2. [组合 bundle 与用户层](<D:/codes/deepseek-harness/apps/cli/src/profile-boot.ts#L157>)：apps/cli/src/profile-boot.ts。
+3. [绑定父代理的 preset generation](<D:/codes/deepseek-harness/packages/preset/agent-presets/src/index.ts#L221>)：packages/preset/agent-presets/src/index.ts。
+
 ## 2. 从命令行到运行树
 
-`apps/cli/src/bin.ts` 解析参数后分派三类模式：profile 启动、plugin 管理和配置导出。常规 `dsh web` 或 `dsh --profile headless <task>` 会进入 `runProfile()`。
+[apps/cli/src/bin.ts](<D:/codes/deepseek-harness/apps/cli/src/bin.ts#L1>) 解析参数后分派三类模式：profile 启动、plugin 管理和配置导出。常规 `dsh web` 或 `dsh --profile headless <task>` 会进入 `runProfile()`。
 
 `runProfile()` 的主要责任不是实现 Agent Loop，而是建立可靠启动边界：
 
@@ -17,7 +25,8 @@ argv
   → composeProfile(profile, patches)
   → boot(Loader root, composed patch list)
   → 向 Context 提供 immutable command-line / environment facts
-  → 监控用户 patch，处理 SIGINT/SIGTERM，最终 dispose 整棵树
+  → 按 profile.patchReload 决定是否监控用户 patch
+  → 处理 SIGINT/SIGTERM，最终 dispose 整棵树
 ```
 
 环境读取有一个值得学习的安全细节：项目 `.env` 与 Harness home `.env` 会被解析和校验，但会拒绝改变 PATH、Node 启动选项、代理、模型 endpoint、`DSH_*` 等 bootstrap-only 变量。启动环境决定进程如何运行和到哪里联网，不能被后来发现的配置文件悄悄重写。
@@ -42,7 +51,7 @@ argv
 
 - **Bundle** 是可分发的一层 patch；包的 `package.json` 用 `dsh.bundle.patch` 指向其 patch 文件。
 - **Profile** 是一个用户可选择的产品组合；它声明应叠加哪些 bundle，并可带自己的 patch。
-- **Base bundle** 是每个产品的公共底座：LLM、Session、工具注册表、文件/shell 能力、安全策略、持久化等。
+- **Base bundle** 是 web/headless/sdk/acp 的公共底座：LLM、Session、工具注册表、文件/shell 能力、安全策略、持久化等。
 - **Headless bundle** 增加命令行 task 解析和一次性 runner，不启动 Host 或 HTTP 服务。
 - **Web bundle** 增加 Host、webserver、API gateway、浏览器模块与 UI 插件，并将单 Agent 的能力移入 preset。
 
@@ -58,7 +67,7 @@ Cordis Context 承载三种核心贡献：
 | Event | 观察或改变生命周期，如 `agent/pre-step`、`tools/execute`、`session/event` |
 | Effect | 注册资源并在插件卸载时反向清理；注册不是永久全局副作用 |
 
-因此一个插件应当通过 `ctx.effect()`、`ctx.on()` 或 `ctx.waterfall()` 安装贡献，并返回/持有对应 disposer。它避免了插件卸载、热更新或 agent scope 结束后残留旧工具和监听器。
+因此一个插件应当通过 `ctx.effect()` 或 `ctx.on()` 安装贡献，并返回/持有对应 disposer。它避免了插件卸载、热更新或 agent scope 结束后残留旧工具和监听器。
 
 Waterfall 事件尤其重要：监听器必须调用 `next()` 才会把处理交给下一层。它是有意的控制点，而非普通广播事件。例如工具执行前的策略插件可以在不调用 `next()` 时拒绝或要求审批。
 
@@ -96,14 +105,30 @@ host Context：共享持久化、sandbox、审批、registry、HTTP/API
 
 1. 跟读 `composeProfile()`，画出一个 `web` profile 的 patch 顺序。
 2. 在 base 和 web patch 中找到 `system-prompt` row，确认为何 web 必须重述完整 config。
-3. 阅读 `apps/cli/config/agent-presets/standard/agent.cordis.yml` 中的 `isolate` group，找出哪些 service 必须留在 host plane。
+3. 阅读 [packages/preset/agent-presets/presets/standard/agent.cordis.yml](<D:/codes/deepseek-harness/packages/preset/agent-presets/presets/standard/agent.cordis.yml#L1>) 中的 `isolate` group，找出哪些 service 必须留在 host plane。
+
+## Profile 生命周期与启动入口
+
+[packages/boot/app-boot/src/profile.ts](<D:/codes/deepseek-harness/packages/boot/app-boot/src/profile.ts#L1>) 的 `PROFILE_TEMPLATES` 是随附组合的实际定义：
+
+| Profile | Bundle 层 | patchReload |
+| --- | --- | --- |
+| web | base + web-app | live |
+| headless | base + headless | startup |
+| sdk | base + sdk-app | startup |
+| acp | base + acp-app | startup |
+| sdk-minimal | sdk-minimal 独立完整树 | startup |
+
+`live` 表示启动后观察用户 patch；`startup` 表示只在启动装配一次，防止一次性任务或标准输入输出协议正在持有工作时替换依赖。自定义 profile 的默认值是 live，不能据此推断每个随附 profile 都热重载。
+
+支持的 Node 应用入口统一通过 `dsh` 和命名 profile。SDK 是调用该入口的库，不能用任意 argv 或内联完整 Cordis 树另造公开启动协议。bundle 通过 manifest 的 `dsh.bundle.patch` 表达可安装层；普通插件由配置行挂载，普通库由代码导入。这三个身份不能混用。
 
 ## 10. 证据索引
 
-- `D:/codes/deepseek-harness/apps/cli/src/bin.ts`
-- `D:/codes/deepseek-harness/apps/cli/src/profile-boot.ts`
-- `D:/codes/deepseek-harness/packages/boot/app-boot/src/index.ts`
-- `D:/codes/deepseek-harness/packages/bundle/base/cordis.patch.yml`
-- `D:/codes/deepseek-harness/packages/bundle/headless/cordis.patch.yml`
-- `D:/codes/deepseek-harness/packages/bundle/web-app/cordis.patch.yml`
-- `D:/codes/deepseek-harness/packages/preset/agent-presets/src/index.ts`
+- [apps/cli/src/bin.ts](<D:/codes/deepseek-harness/apps/cli/src/bin.ts#L1>)
+- [apps/cli/src/profile-boot.ts](<D:/codes/deepseek-harness/apps/cli/src/profile-boot.ts#L1>)
+- [packages/boot/app-boot/src/index.ts](<D:/codes/deepseek-harness/packages/boot/app-boot/src/index.ts#L1>)
+- [packages/bundle/base/cordis.patch.yml](<D:/codes/deepseek-harness/packages/bundle/base/cordis.patch.yml#L1>)
+- [packages/bundle/headless/cordis.patch.yml](<D:/codes/deepseek-harness/packages/bundle/headless/cordis.patch.yml#L1>)
+- [packages/bundle/web-app/cordis.patch.yml](<D:/codes/deepseek-harness/packages/bundle/web-app/cordis.patch.yml#L1>)
+- [packages/preset/agent-presets/src/index.ts](<D:/codes/deepseek-harness/packages/preset/agent-presets/src/index.ts#L1>)

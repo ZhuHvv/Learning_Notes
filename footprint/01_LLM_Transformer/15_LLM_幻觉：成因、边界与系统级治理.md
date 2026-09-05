@@ -218,6 +218,26 @@ for claim in claims:
 
 Chain-of-Verification 通过草稿、验证问题、独立回答和修订减少幻觉；SelfCheckGPT 通过多次采样的不一致性发现可疑内容。二者都是降低风险的信号：模型可能多次稳定地给出同一个错误答案，所以一致性本身不等于真实性。
 
+### 3.5 声明、推断和工具执行应分别设边界
+
+生成结果中应显式区分**已验证事实**、**基于证据的推断**与**未知**。例如，证据只能说明“收入同比下降 12%”时，不应把“竞争加剧导致下降”写成已证实事实；后者最多是带依据与不确定性的推断。
+
+```json
+{
+  "facts": [{"content": "收入同比下降 12%", "evidence_ids": ["E1"]}],
+  "inferences": [{
+    "content": "可能与竞争加剧有关",
+    "basis": ["E1", "E2"],
+    "confidence": 0.62
+  }],
+  "status": "ANSWERABLE | INSUFFICIENT_EVIDENCE | CONFLICT"
+}
+```
+
+验证器至少要拆开三类问题：引用 ID 是否存在、证据是否蕴含声明、数值是否可由原始数值或确定性计算得到。最后一类优先交给程序/计算工具，而不是让模型心算。
+
+工具调用还应采用零信任边界：LLM 只提出工具与参数建议，程序在执行前验证用户意图、权限、参数、对象状态、幂等键和风险等级。删除、支付、发消息、写数据库和生产 API 等副作用操作尤其不能由模型的自然语言推断直接授权。
+
 ## 4. 类比理解
 
 LLM 更像擅长语言理解、规划和写作的非确定性助手，而不是事实数据库。可靠业务系统应像有审计制度的组织：
@@ -363,6 +383,7 @@ def agent_answer(question: str) -> str:
 - [Chain-of-Verification Reduces Hallucination in Large Language Models](https://arxiv.org/abs/2309.11495)
 - [SelfCheckGPT: Zero-Resource Black-Box Hallucination Detection](https://arxiv.org/abs/2303.08896)
 - [本次技术讨论记录](https://chatgpt.com/share/6a6b66aa-f208-83ec-a530-74a18a19083b)
+- [Agent 中的幻觉治理与工具护栏讨论](https://chatgpt.com/share/6a89c1b0-601c-83ec-87d5-88c8e73f8dd0)
 
 ### 复习检查问题
 

@@ -4,6 +4,14 @@
 
 dsh 的 prompt 不是启动时固定的字符串。每个 step 都由 SystemPrompt 收集插件注册的 section、动态 context、变量和可见工具 schema；随后 ReactLoopAgent 把当次 runtime context 加入模型输入。工作区指令则是另一条、可追溯的 durable user-message 注入链。
 
+## 源码阅读路线
+
+按以下顺序打开源码；链接固定到本次核对时的实际行号。
+
+1. [组装 scope 内提示词](<D:/codes/deepseek-harness/packages/core/system-prompt/src/index.ts#L536>)：packages/core/system-prompt/src/index.ts。
+2. [用共享投影判断可注入时机](<D:/codes/deepseek-harness/packages/context/agent-instructions/src/index.ts#L284>)：packages/context/agent-instructions/src/index.ts。
+3. [将请求序列变化写入 header](<D:/codes/deepseek-harness/packages/core/agent-loop/src/agent.ts#L549>)：packages/core/agent-loop/src/agent.ts。
+
 ## 2. Prompt 的四种成分
 
 | 成分 | 来源 | 何时确定 | 是否写入日志 |
@@ -19,7 +27,7 @@ SystemPrompt.assemble() 处理 scope 可见性、同名 section/variable 的 sha
 
 模型是否知道一个工具、工具参数长什么样，和 persona 一样会改变模型的下一步决策。因此 dsh 将 schema 当作 PromptAssembly 的字段，并在 request header 中持久化有效 schema。新工具在 registry 中可执行但没有成为可见 schema，等同于模型无法规划调用它；反之只修改 schema 而不改变执行策略，会制造模型可见承诺与实际能力的错配。
 
-在 Code Mode 下，工具可见性还会改变：模型可能只直接看到 run_code，实际工具通过 SDK 在程序内调用。这个差异应从 dsh-tools 的 mode 和具体 composition 阅读，不能把 native mode 的工具目录直接当成每个 session 的 prompt。
+在 PTC 模式下，工具可见性还会改变：配置 `mode: ptc` 时模型只直接看到 `run_code`，实际工具通过 SDK 在程序内调用。这个差异应从 dsh-tools 的 mode 和具体 composition 阅读，不能把 native mode 的工具目录直接当成每个 session 的 prompt。
 
 ## 4. runtime context 的位置
 
@@ -57,10 +65,16 @@ dsh-agent-instructions 先读取用户全局 `$DSH_HOME/AGENTS.md`，再从最�
 2. 阅读 ReactLoopAgent.preStep()，确认 prompt assembly 在何处发生。
 3. 在 dsh-agent-instructions README/源码中追踪一条 read 工具结果如何触发下一 step 的规则更新。
 
+## 与共享投影、请求序列的连接
+
+工作区指令插件显式依赖 `sessionProjections`，用共享 `turnBoundary` 判断 step 是否仍开放。缺少必需 registry 或投影时直接失败，不能退回自己维护的一套不完整 turn 状态。
+
+指令与 Skill 的 pre-step listener 在修改消息时保留整个 enter decision，包括 `startsRequestSeries`。这一字段连接“输入如何改变”与“请求头为何新增”，应沿 `agent-instructions → agent/pre-step → buildRequest` 一起读。PTC 内部文件调用还要等执行祖先和 step 提交时机，不能在嵌套工具未结算时抢先注入观察结果。
+
 ## 9. 证据索引
 
-- D:/codes/deepseek-harness/packages/core/system-prompt/src/index.ts
-- D:/codes/deepseek-harness/packages/core/agent-loop/src/agent.ts
-- D:/codes/deepseek-harness/packages/context/agent-instructions/README.md
-- D:/codes/deepseek-harness/packages/context/agent-instructions/src/index.ts
-- D:/codes/deepseek-harness/packages/core/tools/src/index.ts
+- [packages/core/system-prompt/src/index.ts](<D:/codes/deepseek-harness/packages/core/system-prompt/src/index.ts#L1>)
+- [packages/core/agent-loop/src/agent.ts](<D:/codes/deepseek-harness/packages/core/agent-loop/src/agent.ts#L1>)
+- [packages/context/agent-instructions/README.md](<D:/codes/deepseek-harness/packages/context/agent-instructions/README.md#L1>)
+- [packages/context/agent-instructions/src/index.ts](<D:/codes/deepseek-harness/packages/context/agent-instructions/src/index.ts#L1>)
+- [packages/core/tools/src/index.ts](<D:/codes/deepseek-harness/packages/core/tools/src/index.ts#L1>)

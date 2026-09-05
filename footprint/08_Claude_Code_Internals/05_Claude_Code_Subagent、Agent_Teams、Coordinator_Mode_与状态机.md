@@ -1,6 +1,7 @@
 # 08.05 Claude Code Subagent、Agent Teams、Coordinator Mode 与状态机
 
-> **源码审查更正（2026-08-15）**：当前公开文档可证实：普通 subagent 有独立上下文、Agent Teams 有 lead／teammate／共享 task list／mailbox，且 team 创建须经用户确认；当前文档还明确普通 subagent **不能再生成 subagent**。`<task-notification>` XML、`COORDINATOR_MODE`、内部环境变量、四阶段提示词和 transcript 路由不是公开稳定协议，必须降级为特定版本逆向线索。不要为 SDK 或插件编写依赖 XML 文本或 Coordinator 内部开关的逻辑。
+> 核验：2026-09-05；本地源码 `d7dbd9a`，发行记录至 `2.1.261`。撤销旧页首“普通 Subagent 不能嵌套”的结论；嵌套深度、并发数、通信路由与权限分别核验。
+
 
 ## 1. 先给出结论
 
@@ -246,7 +247,7 @@ function isTaskNotification(message: {
 | 已调用 Skills | 默认不继承；可预加载指定 Skill | 随完整上下文继承 |
 | Auto memory | 不加载主会话 auto memory | 随主会话上下文 |
 | 工具集合 | 从主会话能力中筛选，并受 Agent 定义限制 | 与主会话相同 |
-| Prompt Cache | 独立 | 首次请求可复用主会话前缀 |
+| Prompt Cache | 是否命中取决于实际模型、前缀和 TTL，不能由上下文隔离直接推断 | 首次请求可能复用主会话前缀，仍需观测 |
 
 普通 Subagent 的初始上下文通常包含：
 
@@ -312,11 +313,11 @@ Agent 消息不能替用户批准权限，也不能通过 `SendMessage` 修改�
 
 官方文档没有公布“运行超过 N 秒就自动转后台”的阈值。当前行为更接近调度选择：
 
-- 主 Agent 需要结果后才能继续时，使用前台执行；
+- fork 模式关闭且允许前台选择时，主 Agent 需要结果后才能继续可使用前台；
 - 任务可与主线并行时，使用后台执行；
-- 用户可以明确要求前台或后台；
+- 用户可以在会话允许的模式范围内要求前台或后台；
 - 用户可以用 `Ctrl+B` 把正在运行的前台任务切到后台；
-- 自 v2.1.198 起，Subagent 默认后台运行，但主 Agent 仍可在需要立即依赖结果时使用前台。
+- 当前交互会话默认开启的 fork 模式会让 Agent 工具生成的子 Agent 后台运行；关闭该模式时才有按依赖选择前台的路径。禁用后台任务等条件另行改变选择。
 
 所以前台与后台描述的是：
 
@@ -384,7 +385,7 @@ function chooseAgent({ contextOverlap, needIndependentReview, cancelled }) {
 
 主 Agent 不应通过自然语言猜测状态。Claude Code 运行时维护任务记录，并向模型或 SDK发送结构化事件。
 
-Agent SDK 当前公开了任务更新事件：
+下面保留旧笔记的任务事件形状作为阅读示意；本仓库未包含相应 SDK（软件开发工具包）类型定义，本次未逐字段复核，不能直接复制为当前类型声明：
 
 ```ts
 type TaskStatus =
@@ -406,7 +407,7 @@ type SDKTaskUpdatedMessage = {
 };
 ```
 
-主 Agent 可获得的信号包括：
+原笔记列出的信号示意如下（字段拼写与枚举值必须以所用 SDK 版本类型为准）：
 
 - `AgentOutput.status = "completed"`：前台运行完成；
 - `AgentOutput.status = "async_launched"`：后台运行已启动；
@@ -541,7 +542,7 @@ Claude Code 版本
 - v2.1.217～v2.1.218 引入可配置深度后默认值为 1；
 - 自 v2.1.219 起，默认最大深度改为 3；设置 `CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH=1` 可禁用嵌套；
 - 子 Agent 的工具池还必须包含 `Agent`；省略或禁用该工具会阻止该 Agent 继续生成；
-- 当前还存在每会话总数与并发数限制，它们和嵌套深度是三套不同预算。
+- 当前仍有并发数与嵌套深度限制；每会话累计 200 次生成的旧上限已移除，见 [本地发行记录](D:/codes/claude-code/CHANGELOG.md#L1015)。不要把旧累计上限继续写入当前模型。
 
 因此稳定原则是“有限深度、受工具白名单和运行时预算共同约束”，具体默认值必须带版本。Agent Teams 的 Teammate 不能生成新的 Teammate，属于另一条团队治理限制，不能与普通 Subagent 嵌套混写。
 
@@ -558,7 +559,7 @@ export function isCoordinatorMode(): boolean {
 }
 ```
 
-这段实现说明它同时受：
+这段未复核的伪代码假设它同时受：
 
 - 构建或服务端 feature gate；
 - `CLAUDE_CODE_COORDINATOR_MODE` 环境变量；
@@ -838,9 +839,9 @@ transcript 是可恢复上下文
 
 ## 16. 关联知识点
 
-- `001_Claude_Code_Prompt_前缀缓存与三级上下文.md`
-- `002_Claude_Code_流式输出、max_tokens_与恢复机制.md`
-- `004_Claude_Code_上下文压缩、Microcompact_与状态恢复.md`
+- [01_Claude_Code_Prompt_前缀缓存与三级上下文.md](01_Claude_Code_Prompt_前缀缓存与三级上下文.md)
+- [02_Claude_Code_流式输出、max_tokens_与恢复机制.md](02_Claude_Code_流式输出、max_tokens_与恢复机制.md)
+- [04_Claude_Code_上下文压缩、Microcompact_与状态恢复.md](04_Claude_Code_上下文压缩、Microcompact_与状态恢复.md)
 - `../02_Agent_RAG_Memory/10_Agent_开发框架与选型.md`
 - `../02_Agent_RAG_Memory/02_Agent_的端到端任务能力.md`
 - `../02_Agent_RAG_Memory/06_MRKL、ReAct、ToT_与_Plan-and-Execute.md`
@@ -881,3 +882,11 @@ transcript 是可恢复上下文
 8. Coordinator Mode 与 Agent Teams 的核心拓扑差异是什么？
 9. 为什么一个 `status` 字段本身还不构成状态机？
 10. 主 Agent 应该依赖什么判断后台任务的真实状态？
+
+## 19. 当前版本的嵌套、部分结果与模型选择
+
+先读 [本地发行记录](D:/codes/claude-code/CHANGELOG.md#L1142)：默认深度 3 已在本地发行记录出现。再读 [本地发行记录](D:/codes/claude-code/CHANGELOG.md#L522)：到轮数上限的文本要视为部分结果。最后读 [本地发行记录](D:/codes/claude-code/CHANGELOG.md#L360)：2.1.251 将该环境变量改为默认模型，自定义定义的 `model` 与显式生成参数优先。
+
+官方[Subagents 文档](https://code.claude.com/docs/en/sub-agents#let-subagents-spawn-their-own-subagents)也确认可配置嵌套。前后台选择还受 fork 模式影响：交互模式的默认 fork 模式会统一后台运行；禁用后台任务或特定 teammate 路径有其它规则。因此第 5 节“需要结果就可以前台”的概括只适用于允许该选择的模式，不能当成所有会话的保证。
+
+在本仓库中真正可读的是 [plugins/feature-dev/commands/feature-dev.md](D:/codes/claude-code/plugins/feature-dev/commands/feature-dev.md#L1) → [plugins/feature-dev/agents/code-explorer.md](D:/codes/claude-code/plugins/feature-dev/agents/code-explorer.md#L1)：命令提出委派要求，Agent 定义给出角色与工具；宿主怎样分配任务和消息队列仍未公开。

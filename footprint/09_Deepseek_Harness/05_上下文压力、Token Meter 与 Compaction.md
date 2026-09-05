@@ -4,6 +4,15 @@
 
 dsh 把“计量当前请求压力”“决定何时压缩”“如何改写可见历史”拆成独立插件：`token-meter` 从 durable Session log 折叠出估算与 provider usage 锚点，`compaction-basic` 在 step 前或确认的上下文溢出后选择安全区间，必要时先无模型裁剪大工具结果，再用一次独立 `llm.stream()` 生成摘要并以 `surfaceOp: replace` 替换旧 surface。
 
+## 源码阅读路线
+
+按以下顺序打开源码；链接固定到本次核对时的实际行号。
+
+1. [当前 surface 的请求压力](<D:/codes/deepseek-harness/packages/llm/token-meter/src/index.ts#L144>)：packages/llm/token-meter/src/index.ts。
+2. [message/attempt 的用量结算](<D:/codes/deepseek-harness/packages/llm/token-meter/src/usage-projection.ts#L82>)：packages/llm/token-meter/src/usage-projection.ts。
+3. [压缩策略默认值与路由覆盖](<D:/codes/deepseek-harness/packages/compaction/compaction-basic/src/config.ts#L67>)：packages/compaction/compaction-basic/src/config.ts。
+4. [事务和 surface replacement](<D:/codes/deepseek-harness/packages/compaction/compaction-basic/src/region.ts#L1>)：packages/compaction/compaction-basic/src/region.ts。
+
 ## 2. 源码调用链与数据流
 
 ### 2.1 计量链
@@ -12,7 +21,7 @@ dsh 把“计量当前请求压力”“决定何时压缩”“如何改写可�
 Session event log
   ├─ request/header、request/context
   ├─ user/message、assistant/message、tool/result
-  ├─ assistant/chunk / usage
+  ├─ assistant/message、assistant/attempt 内嵌 stream 的 usage
   └─ surface replace
         ↓ replay fold
 ctx.tokenMeter.measure(session, requestHeader?)
@@ -23,7 +32,7 @@ ctx.tokenMeter.measure(session, requestHeader?)
 
 `token-meter` 的固定估算是“四字符约一 token + 消息、block、request envelope 结构开销”。它不是 provider tokenizer。若最新成功请求的 provider usage 与当前 canonical envelope 完全匹配，meter 以 provider 数字为锚点；system prompt、tools、provider、model、call config 或可见历史改变后，不能机械沿用旧 usage，而要重新估算或按 surface delta 推进。
 
-可选的 projection 有三组：`tokenUsage` 汇总 durable usage；`contextPressure` 暴露上一请求的 `pressureTokens`、推进到下一请求的 `projectedTokens` 与 adapter 给出的 `contextWindow`；`contextBreakdown` 只估算 system/tools/messages 的构成。projection 面向 UI 和查询，不是 compaction 的判定输入；compaction 直接调用同一 revision 上的 `measure()`。
+相关 projection 有三组：`tokenUsage` 汇总 durable usage；`contextPressure` 暴露上一请求的 `pressureTokens`、推进到下一请求的 `projectedTokens` 与 adapter 给出的 `contextWindow`；`contextBreakdown` 只估算 system/tools/messages 的构成。projection 面向 UI 和查询，不是 compaction 的判定输入；compaction 直接调用同一 revision 上的 `measure()`。
 
 ### 2.2 自动压缩链
 
@@ -110,18 +119,24 @@ compaction/end                # 日志锁释放
 4. 用测试中的 tool-call/result 边界案例说明为什么 numeric seq 连续不等于 surface range 安全。
 5. 对比 pressure 与 context-overflow 两种 trigger，列出它们对容量元数据、保留尾部和重试授权的差异。
 
+## v2 用量结算与请求压力的区别
+
+`usage-projection.ts` 从 assistant/message 或 assistant/attempt 的内嵌流取最后一个 usage sample，避免把同一次请求的多次采样累加成重复消耗。成功 message 的 data.usage 优先；失败尝试有 usage 时也可贡献累计用量。
+
+`TokenMeter` 的成功历史锚点与累计用量不是同一指标。压缩和下一请求需要衡量当前 surface；费用观察可能还要包含失败尝试。`deriveTurnTokenUsage()` 只有在生命周期和各 attempt 用量足以证明精确总数时才返回聚合结果，无法证明时返回 undefined，不能把缺失采样填成零消耗。
+
 ## 7. 证据索引
 
-- `packages/llm/token-meter/src/index.ts`
-- `packages/llm/token-meter/src/surface-fold.ts`
-- `packages/llm/token-meter/src/projection.ts`
-- `packages/compaction/compaction/src/index.ts`
-- `packages/compaction/compaction/src/tool-pairing.ts`
-- `packages/compaction/compaction-basic/src/index.ts`
-- `packages/compaction/compaction-basic/src/config.ts`
-- `packages/compaction/compaction-basic/src/region.ts`
-- `packages/compaction/compaction-basic/src/summarizer.ts`
-- `packages/compaction/compaction-tool-result-pruner/src/index.ts`
-- `packages/core/agent-loop/src/agent.ts`
-- `packages/bundle/base/cordis.patch.yml`
-- `examples/headless-agent/compaction.cordis.snapshot.yml`
+- [packages/llm/token-meter/src/index.ts](<D:/codes/deepseek-harness/packages/llm/token-meter/src/index.ts#L1>)
+- [packages/llm/token-meter/src/surface-fold.ts](<D:/codes/deepseek-harness/packages/llm/token-meter/src/surface-fold.ts#L1>)
+- [packages/llm/token-meter/src/projection.ts](<D:/codes/deepseek-harness/packages/llm/token-meter/src/projection.ts#L1>)
+- [packages/compaction/compaction/src/index.ts](<D:/codes/deepseek-harness/packages/compaction/compaction/src/index.ts#L1>)
+- [packages/compaction/compaction/src/tool-pairing.ts](<D:/codes/deepseek-harness/packages/compaction/compaction/src/tool-pairing.ts#L1>)
+- [packages/compaction/compaction-basic/src/index.ts](<D:/codes/deepseek-harness/packages/compaction/compaction-basic/src/index.ts#L1>)
+- [packages/compaction/compaction-basic/src/config.ts](<D:/codes/deepseek-harness/packages/compaction/compaction-basic/src/config.ts#L1>)
+- [packages/compaction/compaction-basic/src/region.ts](<D:/codes/deepseek-harness/packages/compaction/compaction-basic/src/region.ts#L1>)
+- [packages/compaction/compaction-basic/src/summarizer.ts](<D:/codes/deepseek-harness/packages/compaction/compaction-basic/src/summarizer.ts#L1>)
+- [packages/compaction/compaction-tool-result-pruner/src/index.ts](<D:/codes/deepseek-harness/packages/compaction/compaction-tool-result-pruner/src/index.ts#L1>)
+- [packages/core/agent-loop/src/agent.ts](<D:/codes/deepseek-harness/packages/core/agent-loop/src/agent.ts#L1>)
+- [packages/bundle/base/cordis.patch.yml](<D:/codes/deepseek-harness/packages/bundle/base/cordis.patch.yml#L1>)
+- [snapshots/session/headless.snapshot.ts](<D:/codes/deepseek-harness/snapshots/session/headless.snapshot.ts#L1>)

@@ -1,6 +1,7 @@
 # 08.03 Claude Code 代码检索：ripgrep 与 grep
 
-> **源码审查更正（2026-08-15）**：本篇的 `rg`/`grep` 语法与性能讨论可由 ripgrep 和 grep 的上游资料证明；Claude Code `Grep` 的能力应只依据当前 Tools Reference。公开仓库中没有 `Grep` 工具的实现，所以“底层如何调用 ripgrep、并发策略、RAG 是否存在或为何未使用”不能写成项目源码结论；它们是产品行为说明或架构推断，应与可验证的工具契约分开。
+> 核验：2026-09-05；本地源码 `d7dbd9a`，发行记录至 `2.1.261`。保留 rg/grep 的通用用法；CLI Grep 工具与原生构建内嵌 grep 分开讨论。
+
 
 ## 1. 一句话定位
 
@@ -521,14 +522,14 @@ curl -s http://localhost:8080/metrics | grep request_total
 
 ## 15. 关联知识点
 
-- `001_Claude_Code_Prompt_前缀缓存与三级上下文.md`
-- `004_Claude_Code_上下文压缩、Microcompact_与状态恢复.md`
-- `006_Claude_Code_Agent_Loop、Query_生命周期与工具编排.md`
-- `007_Claude_Code_记忆体系：CLAUDE.md、Rules_与_Auto_Memory.md`
+- [01_Claude_Code_Prompt_前缀缓存与三级上下文.md](01_Claude_Code_Prompt_前缀缓存与三级上下文.md)
+- [04_Claude_Code_上下文压缩、Microcompact_与状态恢复.md](04_Claude_Code_上下文压缩、Microcompact_与状态恢复.md)
+- [06_Claude_Code_Agent_Loop、Query_生命周期与工具编排.md](06_Claude_Code_Agent_Loop、Query_生命周期与工具编排.md)
+- [07_Claude_Code_记忆体系：CLAUDE.md、Rules_与_Auto_Memory.md](07_Claude_Code_记忆体系：CLAUDE.md、Rules_与_Auto_Memory.md)
 - `../01_LLM_Transformer/12_倒排索引与稀疏检索.md`
 - `../01_LLM_Transformer/11_稠密向量、稀疏向量与多向量表示及检索.md`
 - `../02_Agent_RAG_Memory/18_RAG_完整链路：召回、融合、重排、生成.md`
-- `../07_Backend_Deploy_Network/8_沙箱、权限与工具执行安全.md`
+- `../07_Backend_Deploy_Network/08_沙箱、权限与工具执行安全.md`
 
 ## 16. 参考资料与事实边界
 
@@ -554,3 +555,17 @@ Claude Code 的 Grep 工具基于 ripgrep、支持 glob/type/multiline 并遵循
 7. 哪些条件出现时，应在精确本地搜索之外增加混合 RAG？
 8. LSP 与语言服务器分别是什么？为什么不能把它们当作同一个具体程序？
 9. 哪些动态代码关系可能无法被 LSP 可靠解析，反而需要文本搜索补充？
+
+## 18. 搜索范围、权限时序与原生 grep 的版本变化
+
+本次新增记录应沿三条独立线理解：
+
+| 证据 | 能确认的变化 | 不能推出的结论 |
+|---|---|---|
+| [本地发行记录](D:/codes/claude-code/CHANGELOG.md#L765) | 2.1.235 改进 macOS/Linux 原生构建内嵌 grep 的病态正则处理与上下文输出 | Grep 工具的整个实现就是这段 grep |
+| [本地发行记录](D:/codes/claude-code/CHANGELOG.md#L312) | 2.1.251 修复符号链接搜索路径下的 Read deny 规则 | 所有 Shell 命令都自动继承同样的路径过滤 |
+| [本地发行记录](D:/codes/claude-code/CHANGELOG.md#L113) | 2.1.260 把路径是否存在的探测放到权限判定之后 | 仅禁止输出就等于没有越权读取 |
+
+另一个升级教训是 2.1.259 的 Bash 参数 Read deny 变更在 2.1.260 被撤回，见 [本地发行记录](D:/codes/claude-code/CHANGELOG.md#L114)。发行记录要按后续覆盖关系阅读，不能把每条历史修复叠加成当前规则。
+
+源码阅读顺序可从 [plugins/feature-dev/agents/code-explorer.md](D:/codes/claude-code/plugins/feature-dev/agents/code-explorer.md#L1) 的搜索任务定义，到 [plugins/hookify/hooks/pretooluse.py](D:/codes/claude-code/plugins/hookify/hooks/pretooluse.py#L35) 的执行前检查，再到 [plugins/hookify/core/rule_engine.py](D:/codes/claude-code/plugins/hookify/core/rule_engine.py#L182) 的参数提取。前者是模型指令，后两者是插件代码，均不是内置 Grep 的进程启动实现。

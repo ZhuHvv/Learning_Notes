@@ -1,6 +1,7 @@
 # 08.06 Claude Code Agent Loop、Query 生命周期与工具编排
 
-> **源码审查更正（2026-08-15）**：本篇的“模型调用—工具执行—回填结果—继续调用”是公开 API/SDK 能够支持的抽象 Agent Loop；`QueryEngine`、`queryLoop`、`StreamingToolExecutor`、精确状态枚举和恢复分支不在当前公开仓库中。应把它们明确写为某版本逆向材料或推荐的 harness 状态机，不可写成当前 Claude Code 的源码结构。
+> 核验：2026-09-05；本地源码 `d7dbd9a`，发行记录至 `2.1.261`。协议循环与推荐状态机保留；新增可从插件入口逐函数追踪的工具反馈链。
+
 
 ## 1. 先给结论
 
@@ -248,7 +249,7 @@ Plan Mode：主要读取、搜索、设计方案
 
 但博客中“每 5 轮注入提醒”“计划固定写入某路径”等细节若没有当前官方文档或当前构建验证，只能标记为版本相关。
 
-## 10. Query Loop 的状态模型
+## 10. 推荐的 Query Loop 状态模型（设计示例）
 
 一个更接近生产实现的概念状态应至少包含：
 
@@ -342,3 +343,17 @@ Claude Code 当前核心发行物不是一个完整公开源码仓库。官方 G
 4. 多个工具调用能否并行，最终由谁决定？
 5. 为什么 `while(true)` 不是工业 Agent Loop 的主要复杂度来源？
 6. 哪些 Query Loop 结论可以由官方 SDK 验证，哪些只能算版本相关实现？
+
+## 15. 当前 checkout 能追踪的一条真实反馈链
+
+按下面的路径阅读安全插件，不需要猜测 `QueryEngine`：
+
+1. [plugins/security-guidance/hooks/hooks.json](D:/codes/claude-code/plugins/security-guidance/hooks/hooks.json#L1) 把生命周期事件接到命令脚本。
+2. [plugins/security-guidance/hooks/security_reminder_hook.py](D:/codes/claude-code/plugins/security-guidance/hooks/security_reminder_hook.py#L2019) 解析标准输入 JSON，按事件名和工具名分发。
+3. [plugins/security-guidance/hooks/security_reminder_hook.py](D:/codes/claude-code/plugins/security-guidance/hooks/security_reminder_hook.py#L446) 建立本轮 Git 基线。
+4. 编辑后的分支记录路径并检查模式；Stop 进入 [plugins/security-guidance/hooks/security_reminder_hook.py](D:/codes/claude-code/plugins/security-guidance/hooks/security_reminder_hook.py#L1700)。
+5. Stop 调用 [plugins/security-guidance/hooks/llm.py](D:/codes/claude-code/plugins/security-guidance/hooks/llm.py#L710)；有问题时记录状态并输出反馈，让宿主按 Hook 配置处理。
+
+这是一条“事件 → 脚本 → 状态 → 分析 → 反馈”的插件实现链。commit/push 路径与 Stop 并不共用完全相同的分析方式，详见新增安全审查篇。
+
+`end_turn` 只结束一次模型回合；Stop 反馈、后台任务、用户取消和整个目标完成是不同层次。不要用一个 `completed` 布尔值同时代表它们。

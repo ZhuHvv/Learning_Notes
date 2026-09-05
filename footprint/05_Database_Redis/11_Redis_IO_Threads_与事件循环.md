@@ -59,3 +59,7 @@ io-threads-do-reads yes
 ## 6. 你在讨论中的理解推进
 
 理解 IO threads 的边界，避免误以为 Redis 变成多线程命令执行。
+
+## 7. 关联知识点
+
+- [Linux epoll：Socket、就绪通知、实例与多线程模型](../07_Backend_Deploy_Network/13_Linux_epoll_Socket_就绪通知与多线程等待.md)：解释事件循环底层的 fd 注册、ready 通知、`epoll_wait()` 睡眠/唤醒、实例边界以及多线程连接归属。

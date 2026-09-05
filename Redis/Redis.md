@@ -1,7 +1,10 @@
 ---
+
 以小林coding图解redis为主脉，附加各种延伸内容；
 感谢小林coding，感谢代码随想录，感谢知乎，感谢各种社区和论坛；
+
 ---
+
 # Redis Notes
 
 命令行客户端
@@ -19,14 +22,14 @@
 
 ## SQL关系型数据库 vs NoSQL非关系型数据库
 
-|              |                           SQL                            |                 NoSQL                  |
-| :----------: | :------------------------------------------------------: | :------------------------------------: |
-| 数据存储结构 |                    有固定行、列的表格                    |           文档、键值对、图等           |
-|  数据关联性  |                       表与表可关联                       |            关联需要人为维护            |
-|   数据查询   |                 使用统一SQL语句进行查询                  |             无固定查询语法             |
-|     事务     | 支持事务，且必须满足ACID(原子性、一致性、隔离性、持久性) | 或不支持事务、或只需要BASE(最终一致性) |
-| 数据存储位置 |                           磁盘                           |                  内存                  |
-|    扩展性    |                           垂直                           |                  水平                  |
+|        | SQL                             | NoSQL                  |
+|:------:|:-------------------------------:|:----------------------:|
+| 数据存储结构 | 有固定行、列的表格                       | 文档、键值对、图等              |
+| 数据关联性  | 表与表可关联                          | 关联需要人为维护               |
+| 数据查询   | 使用统一SQL语句进行查询                   | 无固定查询语法                |
+| 事务     | 支持事务，且必须满足ACID(原子性、一致性、隔离性、持久性) | 或不支持事务、或只需要BASE(最终一致性) |
+| 数据存储位置 | 磁盘                              | 内存                     |
+| 扩展性    | 垂直                              | 水平                     |
 
 </br>
 
@@ -47,7 +50,6 @@
 
 1. KEYS 查看符合模板的所有key，
    由于支持模糊匹配，所以当数据量到达一定规模，效率会很低，因此不建议在生产环境设备上使用
-
 - 语法 `KEYS pattern`
 - patterns支持模糊匹配
 
@@ -60,20 +62,17 @@
 > 如果想逐字匹配特殊字符，可以用 `\` 。
 
 1. DEL 删除指定的一个key
-
 - 语法 `DEL key [key ...]`
   可接受多个key
+
 - 返回值：整数，被删除的**实际**键数量
-
 1. EXISTS 判断key是否存在
-
 - 语法 `EXISTS key [key ...]`
   可接受多个key
-- 返回值：整型。参数中指定的 `存在的`键的数量
 
+- 返回值：整型。参数中指定的 `存在的`键的数量
 1. EXPIRE 为 key 设置超时时间。超时时间到期后，该 key 将被自动删除
    具有关联超时的 key 通常被称为 易失的 (volatile)
-
 - 语法 `EXPIRE key seconds [NX | XX | GT | LT]`
 
 > NX -- 仅当 key 不存在超时时间时才设置超时
@@ -82,7 +81,6 @@
 > LT -- 仅当新的超时时间小于当前超时时间时才设置
 
 1. TTL 返回具有超时的键的剩余生存时间
-
 - 语法 `TTL key`
 - 返回值
 
@@ -100,19 +98,19 @@ Redis是key-value型数据库，key一般是 `String`类型，value类型则不�
 
 > 例如： 公司:项目:组:成员
 
-|    类型     |         例子          |
-| :---------: | :-------------------: |
-|  基本类型   |           /           |
-|   String    |      hello world      |
-|    Hash     | {a:"hello",b:"world"} |
-|    List     |     [a->b->c->d]      |
-|     Set     |      {A , B , C}      |
-|  SortedSet  |   {A:1, B:2 , C:3}    |
-|  特殊类型   |           /           |
-|     GEO     |     {A:(123,456)}     |
-|   BitMap    |     0101011010010     |
-| HyperLogLog |     0101011010010     |
-|   stream    |                       |
+| 类型          | 例子                    |
+|:-----------:|:---------------------:|
+| 基本类型        | /                     |
+| String      | hello world           |
+| Hash        | {a:"hello",b:"world"} |
+| List        | [a->b->c->d]          |
+| Set         | {A , B , C}           |
+| SortedSet   | {A:1, B:2 , C:3}      |
+| 特殊类型        | /                     |
+| GEO         | {A:(123,456)}         |
+| BitMap      | 0101011010010         |
+| HyperLogLog | 0101011010010         |
+| stream      |                       |
 
 </br>
 
@@ -140,17 +138,19 @@ Redis是key-value型数据库，key一般是 `String`类型，value类型则不�
 #### 内部实现
 
 1. SDS(简单动态字符串)
-
+   
    - 可保存**文本数据、二进制数据**
-
+     
      > - SDS使用 `len`属性判断字符串是否结束；
      > - 所有的SDS API都以 `二进制方式`处理SDS存放在 `buf[]`数组中的数据；
-     >
+   
    - 获取字符串长度的时间复杂度为O(1)
+   
    - SDS API是安全的，拼接前会检查空间是否满足，不足会自动扩容，因此拼接不会缓冲区溢出
+
 2. 内部编码(encoding)
    ![](https://cdn.xiaolincoding.com/gh/xiaolincoder/redis/%E6%95%B0%E6%8D%AE%E7%B1%BB%E5%9E%8B/string%E7%BB%93%E6%9E%84.png)
-
+   
    - int
      保存二进制64位有符号整数；
      字符串对象的**ptr指针直接赋值**为所存整数，不再指向
@@ -159,13 +159,12 @@ Redis是key-value型数据库，key一般是 `String`类型，value类型则不�
      保存字符串，长度<=44B
      用SDS保存
      分配**一次**内存，字符串对象和SDS**连续存储**
-
+   
    > - 由于连续分配，所以需要扩容时要重新分配内存，开销大，因此 embstr编码的对象**实际上是只读**的
    > - 对 embstr对象执行修改命令，会先转换成raw，再执行
-   >
-
+   
    ![](https://cdn.xiaolincoding.com/gh/xiaolincoder/redis/%E6%95%B0%E6%8D%AE%E7%B1%BB%E5%9E%8B/embstr.png)
-
+   
    - raw
      保存字符串，长度>44B
      分配**两次**内存，字符串对象和SDS**分开存**
@@ -195,6 +194,7 @@ Redis是key-value型数据库，key一般是 `String`类型，value类型则不�
    元素数量小于 `512`(默认值，可修改)且每个元素值小于 `64B`(默认值，可修改)，
 2. 哈希表
    否则
+   
    </br>
 
 ### List类型
@@ -348,11 +348,11 @@ Redis是key-value型数据库，key一般是 `String`类型，value类型则不�
 - 当缓冲区剩余空间不足时，Redis会自动扩大SDS空间大小
 
 > - addlen--字符串需要增加的长度；addlen+len=newlen--扩容后的字符串长度；
+> 
 > - 当 `newlen > alloc - len`
->
 > 1. `newlen < 1 MB` -- 则SDS扩容至 `2*newlen`
+> 
 > 2. `newlen >= 1 MB` -- 则SDS扩容至 `newlen + 1 MB`
->
 > - 否则，直接使用剩余空间
 
 #### 节省内存空间
@@ -363,16 +363,15 @@ Redis是key-value型数据库，key一般是 `String`类型，value类型则不�
   告诉编译器取消结构体在编译过程中的优化对齐，按照**实际占用字节数**进行对齐
 
 > - 在 `struct声明` 加上 **\_\_attribute\_\_((\_\_packed\_\_))**
->
->> 例如 struct  **\_\_attribute__((\_\_packed\_\_))**  test2{
->> $~~~~~~~~~~$ char a;
->> $~~~~~~~~~~$ int b;
->> }test2;
->> 默认情况下分配空间时，会进行字节对齐
->> ![](https://cdn.xiaolincoding.com//mysql/other/35820959e8cf4376391c427ed7f81495.png)
->> 而编译优化后，则不会浪费中间3个字节
->> ![](https://cdn.xiaolincoding.com//mysql/other/47e6c8fbc17fd6c89bdfcb5eedaaacff.png)
->>
+> 
+> > 例如 struct  **\_\_attribute__((\_\_packed\_\_))**  test2{
+> > $~~~~~~~~~~$ char a;
+> > $~~~~~~~~~~$ int b;
+> > }test2;
+> > 默认情况下分配空间时，会进行字节对齐
+> > ![](https://cdn.xiaolincoding.com//mysql/other/35820959e8cf4376391c427ed7f81495.png)
+> > 而编译优化后，则不会浪费中间3个字节
+> > ![](https://cdn.xiaolincoding.com//mysql/other/47e6c8fbc17fd6c89bdfcb5eedaaacff.png)
 
 </br>
 
@@ -401,7 +400,6 @@ $~~~~~~$包括表头指针head、表尾节点tail、表节点数量len 以及可
 
 1. 节点间内存不连续，因此**无法很好利用CPU缓存**
 2. 保存一个链表节点的值都需要一个链表节点结构头的分配，内存开销较大
-
 - 由于缺陷，Redis3.0的list对象在数据量较少的情况下，会使用**压缩列表**
 - 但压缩列表存在性能问题，因此在3.2版本引入**quicklist**
 - 在5.0版本引入了**listpack**
@@ -418,21 +416,19 @@ $~~~~~~$包括表头指针head、表尾节点tail、表节点数量len 以及可
 
 > - 由**连续内存块**组成的**顺序型**数据结构
 > - **压缩列表结构**
->
->> **zlbytes** -- 整个表占用的内存字节数
->> **zltail** -- 尾节点（entryN）距离起始地址的**偏移字节量**
->> **zllen** -- 表中节点数量
->> **zlend** -- 标记表的结束点，固定值 `0xFF(255)`
->>
->
+> 
+> > **zlbytes** -- 整个表占用的内存字节数
+> > **zltail** -- 尾节点（entryN）距离起始地址的**偏移字节量**
+> > **zllen** -- 表中节点数量
+> > **zlend** -- 标记表的结束点，固定值 `0xFF(255)`
+> 
 > - **压缩列表节点**
->
->> **prevlen** -- `前一个节点长度`，方便实现从后向前遍历
->> $~~~~$若 前一节点长度小于**254B** ，则prevlen占用 `1B`
->> $~~~~$否则，则prevlen占用 `5B`
->> **encoding** -- 当前节点 `实际数据`的 `类型`、`长度`，主要为 字符串、整数
->> **data** -- 当前节点 `实际数据`
->>
+> 
+> > **prevlen** -- `前一个节点长度`，方便实现从后向前遍历
+> > $~~~~$若 前一节点长度小于**254B** ，则prevlen占用 `1B`
+> > $~~~~$否则，则prevlen占用 `5B`
+> > **encoding** -- 当前节点 `实际数据`的 `类型`、`长度`，主要为 字符串、整数
+> > **data** -- 当前节点 `实际数据`
 
 ![](https://cdn.xiaolincoding.com/gh/xiaolincoder/redis/%E6%95%B0%E6%8D%AE%E7%B1%BB%E5%9E%8B/%E5%8E%8B%E7%BC%A9%E5%88%97%E8%A1%A8%E7%BC%96%E7%A0%81.png "Redis压缩列表元素编码")
 图中 `content`表示实际数据，即 `data`
@@ -485,22 +481,24 @@ Redis在实际使用哈希表时，定义了一个 `dict`结构体，内部属�
 
 - rehash过程
   ![](https://cdn.xiaolincoding.com//mysql/other/cabce0ce7e320bc9d9b5bde947b6811b.png "rehash过程")
-
 1. 触发条件
+   
    - **负载因子**(load factor) = 哈希表已保存节点数量 / 哈希表大小
    - 哈希表大小是指所有不同键的数量，但是由于哈希冲突的存在，所以节点数量 >= 哈希表大小
    - 当 `负载因子>=1`，且没有在执行 `bgsave(RDB快照)`、`bgrewiteaof(AOF重写)`命令，进行 rehash
    - 当 `负载因子>=5`，无论如何都 rehash
 
 2. 渐进式rehash
+   
    - 为了避免 rehash 在数据迁移过程中，因拷贝数据的耗时，影响 Redis 性能
    - 把一次性大量数据迁移工作的开销，分摊到了多次处理请求的过程中
    - 具体过程
-    > - 正常服务请求阶段，插入的数据写入 `哈希表1`，`哈希表2`未分配空间
-    > - 当数据量增加，触发rehash后，为 `哈希表2`分配空间（一般是表1的两倍）
-    > - 在rehash期间，每次对哈希表元素CRUD时，除执行相应操作（在两张表中都进行）之外，**顺序地**将表1中的`key-value`**迁移（表1中无，表2中有）**到 表2
-    > - 对于CRUD，C会直接放入表2；R会先查表1，若无，则查表2；
-    > - 最终 表1 会变成空表
+     
+     > - 正常服务请求阶段，插入的数据写入 `哈希表1`，`哈希表2`未分配空间
+     > - 当数据量增加，触发rehash后，为 `哈希表2`分配空间（一般是表1的两倍）
+     > - 在rehash期间，每次对哈希表元素CRUD时，除执行相应操作（在两张表中都进行）之外，**顺序地**将表1中的`key-value`**迁移（表1中无，表2中有）**到 表2
+     > - 对于CRUD，C会直接放入表2；R会先查表1，若无，则查表2；
+     > - 最终 表1 会变成空表
 
 ### 整数集合
 
@@ -519,6 +517,7 @@ typedef struct intset {
     // 若 encoding = INTSET_ENC_INT64，则 contents 中每一个元素类型为 int32_t；
 } intset;
 ```
+
 </br>
 
 #### 升级（但没有降级）
@@ -527,13 +526,13 @@ typedef struct intset {
 
 - 示例
   原本有三个 `int_16`元素，现在要加一个 `int_32`元素
-
 1. 先扩容
    ![](https://cdn.xiaolincoding.com//mysql/other/e2e3e19fc934e70563fbdfde2af39a2b.png)
 
 2. 再转换原本元素的类型（从后向前），并保持原本顺序
    ![](https://cdn.xiaolincoding.com//mysql/other/e84b052381e240eeb8cc97d6b729968b.png)
-</br>
+   
+   </br>
 
 ### 跳表
 
@@ -603,15 +602,19 @@ typedef struct zskiplist {
 #### 层数设置
 
 - 跳表的相邻两层的节点数量最理想的比例是 2:1（下2上1），查找复杂度可以降低到 O(logN)
+
 - 跳表在创建节点时，会在[0,1]生成一个随机数p
+  
   > 若 `p < 0.25`，层数+1，生成下一个随机数；
   > `p > 0.25`，结束
 
 - 层高h最大限制为 `ZSKIPLIST_MAXLEVEL`，`头节点创建`时高度就为h
+  
   > ZSKIPLIST_MAXLEVEL：
-      Redis 7.0 定义为 32；
-      Redis 5.0 定义为 64；
-      Redis 3.0 定义为 32；
+  > 
+  >     Redis 7.0 定义为 32；
+  >     Redis 5.0 定义为 64；
+  >     Redis 3.0 定义为 32；
 
 #### 为什么不用 平衡树 而用 跳表
 
@@ -703,13 +706,16 @@ typedef struct quicklistNode {
 ### “多”线程
 
 1. Redis作为内存数据库，CRUD的执行非常快，性能瓶颈更多是在网络IO上；
-2. **核心命令执行模块是单线程的**，即处理客户端的 GET、SET、HGET 等数据操作命令时，始终只有一个线程在工作；
 
+2. **核心命令执行模块是单线程的**，即处理客户端的 GET、SET、HGET 等数据操作命令时，始终只有一个线程在工作；
+   
    > - 避免传统多线程的上下文切换浪费资源；
    > - 避免传统多线程锁的竞争；
-   >
+
 3. Redis4.0引入 `UNLINK`命令，由后台线程异步执行删除操作；
+
 4. Redis6.0引入多线程IO，IO线程负责**读网络$\rightarrow$接收客户端命令**、**写网络$\rightarrow$返回结果**（也就是命令的 `读`、`写`由IO线程完成，但命令的解析和执行依然由主线程完成）；
+
 5. 需结合事件机制中的文件事件
 
 </br>
@@ -748,16 +754,18 @@ typedef struct quicklistNode {
 ### 时间事件
 
 - 分类：
-
+  
   1. 定时事件：相应程序在指定时间执行一次；
+  
   2. 周期性事件：相应程序每隔固定时间执行一次；
+  
   3. 区别：时间处理器返回值
-
+     
      > - **AE_NOMORE**：定时事件，到设定时间后触发时间处理器执行一次相应程序，之后**删除**该事件；
      > - **其他值**：周期性事件，事件到达后触发处理器执行相应程序，之后修改该事件的**when**属性值，让该事件能再次达到；
-     >
-- 时间事件源码定义：
 
+- 时间事件源码定义：
+  
   ```c
   typedef struct aeTimeEvent {
       /* 全局唯一ID */
@@ -778,14 +786,15 @@ typedef struct quicklistNode {
       struct aeTimeEvent *next;
   } aeTimeEvent;
   ```
+
 - Redis主要的时间事件
-
+  
   1. 核心周期性时间事件serverCron：
-
+     
      > - 周期性时间事件；
      > - Redis 服务器的"心跳"，处理各种维护任务，如 `更新LRU时钟`、`更新服务器每秒执行命令的次数`、`处理SIGTERM信号`、`执行被延迟的BGREWRITEAOF`等；
      > - **默认频率**：每秒执行 **server.hz** 次（默认 `hz=10`）
-     >
+  
   2. 模块定时器处理器moduleTimerHandler
 
 </br>
@@ -803,8 +812,9 @@ epoll：[从青铜到王者：带你吃透epoll核心机制-51CTO.COM](https://s
 ![](https://pic1.zhimg.com/v2-97e9acf83e6dbd659fdbfed9a914ae86_1440w.jpg)
 
 - aeEventLoop在且只在主线程中；
-- 图中的未就绪文件事件表描述不准确，应为**注册文件事件表**，存储所有**已注册**的事件的相关信息，比如：读事件or写事件、回调函数指针等，其中元素定义如下：
 
+- 图中的未就绪文件事件表描述不准确，应为**注册文件事件表**，存储所有**已注册**的事件的相关信息，比如：读事件or写事件、回调函数指针等，其中元素定义如下：
+  
   ```c
   typedef struct aeFileEvent {
       int mask;                 // AE_READABLE | AE_WRITABLE
@@ -813,14 +823,13 @@ epoll：[从青铜到王者：带你吃透epoll核心机制-51CTO.COM](https://s
       void *clientData;         // client 指针
   } aeFileEvent;
   ```
-
 1. 主线程事件循环
-
+   
    ```c
    while (!server.shutdown) {
        aeProcessEvents(eventLoop);
    }
-
+   
    /*
    aeProcessEvents():
    1. aeApiPoll()        epoll_wait
@@ -829,13 +838,19 @@ epoll：[从青铜到王者：带你吃透epoll核心机制-51CTO.COM](https://s
    4. processIOThreads()或handleClientsWithPendingReadsUsingThreads()   ★ Redis 6+ 新增阶段，接管IO线程处理结果
    */
    ```
-2. **aeApiPoll()**：主线程调用 `epoll_wait`，系统内核从epoll红黑树中找到所有就绪事件，放入epoll就绪事件表；
-3. 主线程从epoll就绪事件表中将上一步得到的就绪事件，经过一定转换（如 `fired[0] = { fd=5, mask=AE_READABLE }`），放入 `aeEventLoop.fired`；
-4. **processFileEvents()**：主线程遍历 `aeEventLoop.fired`，对每个就绪事件从 `aeEventLoop.events`中找到相应的**回调函数**；
-5. **processTimeEvents()**：类似地，时间事件处理；
-6. 在回调函数中，主线程会将需要分配出去的IO操作分配给对应的IO线程（有些回调，比如接受新连接，主线程自己就能搞定，不需要交给IO线程）；
-7. **processIOThreads()**：
 
+2. **aeApiPoll()**：主线程调用 `epoll_wait`，系统内核从epoll红黑树中找到所有就绪事件，放入epoll就绪事件表；
+
+3. 主线程从epoll就绪事件表中将上一步得到的就绪事件，经过一定转换（如 `fired[0] = { fd=5, mask=AE_READABLE }`），放入 `aeEventLoop.fired`；
+
+4. **processFileEvents()**：主线程遍历 `aeEventLoop.fired`，对每个就绪事件从 `aeEventLoop.events`中找到相应的**回调函数**；
+
+5. **processTimeEvents()**：类似地，时间事件处理；
+
+6. 在回调函数中，主线程会将需要分配出去的IO操作分配给对应的IO线程（有些回调，比如接受新连接，主线程自己就能搞定，不需要交给IO线程）；
+
+7. **processIOThreads()**：
+   
    - 读：IO线程执行 `read()`将socket发来的命令读入对应请求的 `client对象`的 `querybuf`中，主线程执行 `processInputBuffer()`，读出命令并解析、执行；
    - 写：主线程执行命令的过程中把结果写入对应请求的 `client对象`的 `replybuf`，IO线程执行 `write()`，将缓冲区的内容通过socket发送给客户端；对于写命令来说，这一阶段主线程是要回收 `write()`的执行结果，并决定是否继续监听 `AE_WRITABLE`(可能结果比较大，一次写不完)；
 
@@ -849,10 +864,13 @@ Redis每执行一条**写操作命令**，便将该命令追加到一个特定�
 ![](https://cdn.xiaolincoding.com//mysql/other/6f0ab40396b7fc2c15e6f4487d3a0ad7.png "AOF下发起写命令")
 
 - 先执行写操作，再将命令写入AOF日志
+
 - 避免额外的检查开销
-    > 能执行说明该命令没问题。省的到时候把命令读出来还要检查语法等正确性
+  
+  > 能执行说明该命令没问题。省的到时候把命令读出来还要检查语法等正确性
 
 - 不会阻塞当前写命令的执行
+  
   > 先执行命令再记录，保证写命令执行优先
 
 示例：
@@ -863,16 +881,19 @@ AOF日志文件中存**文本**
 - `*n`：表示目录中有 `n`个部分
 - `$l`：表示该部分的字节长度为 `l`
 - `set`：该部分的具体内容
-</br>
+  
+  </br>
 
 #### 风险
 
 1. 丢失
-  > 执行完写命令，在将该命令写入磁盘时，出现诸如服务器宕机等情况时，会造成数据丢失；
+   
+   > 执行完写命令，在将该命令写入磁盘时，出现诸如服务器宕机等情况时，会造成数据丢失；
 
 2. 可能阻塞下一条命令
-  > `写命令的执行` 和 `写命令写入AOF日志文件` 都是在主进程进行的；如果写入磁盘的效率太低，会阻塞后续命令执行
-  > ![](https://cdn.xiaolincoding.com//mysql/other/28afd536c57a46447ddab0a2062abe84.png)
+   
+   > `写命令的执行` 和 `写命令写入AOF日志文件` 都是在主进程进行的；如果写入磁盘的效率太低，会阻塞后续命令执行
+   > ![](https://cdn.xiaolincoding.com//mysql/other/28afd536c57a46447ddab0a2062abe84.png)
 
 #### 写回策略 （when写入硬盘）
 
@@ -946,12 +967,14 @@ SET key1 new_value1   //← 写完这一行后崩溃！
 ![](https://cdn.xiaolincoding.com//mysql/other/d4cfac545377b54dd035c775603b4936.png "写时拷贝")
 
 **父进程阻塞**发生阻塞：
+
 1. 为子进程复制页表
 2. 写时拷贝复制内存数据
 
 但这会导致两个问题：
-  > - 当主进程需要修改一个数据量比较大键值对，那么写时拷贝需要比较多的时间，可能会导致主进程阻塞
-  > - 写时拷贝为主进程分配新内存空间，那子进程进行重写读到的数据就不是最新的了，这就违背了AOF持久化的初衷。
+
+> - 当主进程需要修改一个数据量比较大键值对，那么写时拷贝需要比较多的时间，可能会导致主进程阻塞
+> - 写时拷贝为主进程分配新内存空间，那子进程进行重写读到的数据就不是最新的了，这就违背了AOF持久化的初衷。
 
 因此，引入AOF重写缓冲区来解决这个问题
 
@@ -1013,27 +1036,31 @@ RDB 文件的加载工作是在服务器启动时自动执行的
 ### 相关命令
 
 - 对已有的key设置
-
 1. `expire <key> <n>`：设置 `key`在 `n秒`后过期；
-2. `pexpire <key> <n>`：设置 `key`在 `n毫秒`后过期；
-3. `expireat <key> <n>`：设置 `key`在某个时间戳(精确到 `秒`)之后过期；
-4. `pexpireat <key> <n>`：设置 `key`在某个时间戳(精确到 `毫秒`)之后过期；
 
+2. `pexpire <key> <n>`：设置 `key`在 `n毫秒`后过期；
+
+3. `expireat <key> <n>`：设置 `key`在某个时间戳(精确到 `秒`)之后过期；
+
+4. `pexpireat <key> <n>`：设置 `key`在某个时间戳(精确到 `毫秒`)之后过期；
 - 定义key并设置
+  
   1. `set <key> <value> ex <n>`：`n秒`后过期；
   2. `set <key> <value> px <n>`：`n毫秒`后过期；
   3. `setex <key> <n> <value>`：`n秒`后过期；
 
 - 查看key剩余存活时间
-`TTL <key>`
+  `TTL <key>`
+  
   > 返回剩余**秒**数
   > key不存在返回 **-2**
   > 过期时间不存在返回 **-1**
 
 - 取消key过期时间
-`PERSIST <key>`
+  `PERSIST <key>`
 
 ### 判断key过期
+
 1. 当某个key被设置了过期时间，Redis会将该key存入**过期字典(expiresdict)**，该字典中键为指向key的指针，值为过期时间值的long long整型；
 2. 查询某个key时，首先检查该key是否在`expiresdict`中，
    - 若不在，正常读取键值；
@@ -1044,29 +1071,33 @@ RDB 文件的加载工作是在服务器启动时自动执行的
 #### 定时删除
 
 设置key的过期时间的同时创建一个**定时事件**，当到达过期时间时，**事件处理器**自动执行key的删除操作
-   - cpu占用高但可以尽快释放内存
+
+- cpu占用高但可以尽快释放内存
 
 #### 惰性删除
 
 **不主动删除**过期key，每次访问key的时候检测是否过期，若过期再删除
-   - 内存释放不及时但cpu占用少
+
+- 内存释放不及时但cpu占用少
 
 #### 定期删除
 
 每隔一段时间**随机**取出一定数量的key，检查并删除其中过期的key
-   - 折中</br>
+
+- 折中
 
 </br>
 
 ## Redis内存淘汰
 
 当Redis的运行内存达到所设置的最大运行内存（maxmemory B）时，触发内存淘汰策略;
-  > - 64位OS中，maxmemory默认值=0，表示没有内存大小限制；
-  > - 32位OS中，maxmemory默认值=3G，32位机器内存最大仅为4G，留1G给系统本身；
 
-   - `config get maxmemory-policy`命令查看当前Redis内存淘汰策略；
-   - `config set maxmemory-policy <policy>`命令暂时性修改当前Redis内存淘汰策略为 `<policy>`，立即生效，重启失效；
-   - 修改Redis文件配置中 `maxmemory-policy <policy>`，重启后生效，且一直有效；
+> - 64位OS中，maxmemory默认值=0，表示没有内存大小限制；
+> - 32位OS中，maxmemory默认值=3G，32位机器内存最大仅为4G，留1G给系统本身；
+
+- `config get maxmemory-policy`命令查看当前Redis内存淘汰策略；
+- `config set maxmemory-policy <policy>`命令暂时性修改当前Redis内存淘汰策略为 `<policy>`，立即生效，重启失效；
+- 修改Redis文件配置中 `maxmemory-policy <policy>`，重启后生效，且一直有效；
 
 ### 不进行数据淘汰的策略
 
@@ -1104,7 +1135,7 @@ Redis3.0后默认的内存淘汰策略；
 
 ##### allkeys-random
 
-随即淘汰；
+随机淘汰；
 
 ##### allkeys-lru
 
@@ -1130,15 +1161,15 @@ typedef struct redisObjetct{
 #### LRU
 
 - 避免传统LRU实现的问题：
-
+  
   > 1. 用**链表**管理所有的缓存数据 $\longrightarrow$ 空间开销；
   > 2. 数据被访问，需要将链表中对应的节点移动到表头$\longrightarrow$时间、性能开销；
-  >
-- Redis实现方式：
 
+- Redis实现方式：
+  
   > 1. 在对象结构体中**lru属性**记录**最后一次被访问的时间戳**；
   > 2. 淘汰时，**随机采样**，随机取若干值，淘汰其中**最久没被使用**的；
-  >
+
 - 问题：
   **缓存污染**：某些数据被访问次数很少，但在缓存中待的时间很久；
 
@@ -1147,55 +1178,55 @@ typedef struct redisObjetct{
 根据访问频率进行淘汰；
 
 - Redis对象lru属性
-
+  
   > 1. 高**16**位存储**ldt：访问key的时间戳**；
   > 2. 低**8**位存储**logc：key的被访问频次**，初始值=5，logc越小表示使用频率越低；
-  >
-- logc变化规则
 
+- logc变化规则
+  
   1. 当对应的key被访问是，会使用LFULogIncr()对logc的值进行更新；
   2. 进行淘汰时，会使用LFUDecrAndReturn()对淘汰范围内Redis对象的logc进行计算，从而淘汰logc最小的键值；
-
+  
   > - logc的值会随时间推移而衰减，衰减的值取决于**前后两次访问的时间差**；
   > - 对应的key被访问时，还需要**按一定概率**对logc进行**增加**；
   > - **lfu-decay-time**：单位：分钟，默认为1，用于调整logc**衰减速度**；
   > - **lfu-log-factor**：用于调整logc**增长速度**；
-  >
-
+  
   ```c
   // 更新LFU计数器的算法
   uint8_t LFULogIncr(uint8_t counter) {
       if (counter == 255) return 255;  // 达到最大值
-
+  
       // 计算随机增加概率
       double r = (double)rand()/RAND_MAX;
       double baseval = counter - LFU_INIT_VAL;  // LFU_INIT_VAL=5
       if (baseval < 0) baseval = 0;
-
+  
       // 概率公式：1/(衰减因子 * 计数器值 + 1)
       double p = 1.0/(baseval * server.lfu_log_factor + 1);
-
+  
       if (r < p) counter++;  // 以概率p增加计数器
-
+  
       return counter;
   }
-
+  
   // 计算衰减后的计数器值
   unsigned long LFUDecrAndReturn(robj *o) {
       // 获取最后访问时间（高16位）
       unsigned long ldt = o->lru >> 8;
       // 获取当前计数器值（低8位）
       unsigned long counter = o->lru & 255;
-
+  
       // 计算经过的分钟数
       unsigned long num_periods = server.lfu_decay_time ? 
           LFUTimeElapsed(ldt) / server.lfu_decay_time : 0;
-
+  
       if (num_periods)
           counter = (num_periods > counter) ? 0 : counter - num_periods;
       return counter;
   }
   ```
+  
   </br>
 
 ## 主从复制
@@ -1218,11 +1249,13 @@ typedef struct redisObjetct{
 #### 阶段一：建立连接，协商同步
 
 1. 从服务器执行 `replicaof`后，给主服务器发 `psync`命令，请求进行数据同步；
+   
    > 1. 主服务器runID：第一次同步时= **?** ，对应每个Redis服务器启动时生成的随机ID，第一次同步时不知道主服务器ID，因此为`?`；
-    > 2. 复制进度offset：第一次同步时= **-1**；
-    > 主服务器、从服务器分别维护自己的复制进度（偏移量），单位：字节，若两者相等则说明数据库状态一致；（具体的看后面）
+   > 2. 复制进度offset：第一次同步时= **-1**；
+   >    主服务器、从服务器分别维护自己的复制进度（偏移量），单位：字节，若两者相等则说明数据库状态一致；（具体的看后面）
 
 2. 主服务器收到psync命令后，发送 `FULLRESYNC`命令响应从服务器，表示采用**全量复制**，从服务器收到后记录`FULLRESYNC`携带的参数；
+   
    > 1. 主服务器runID；
    > 2. 复制进度offset；
 
@@ -1293,17 +1326,18 @@ typedef struct redisObjetct{
 ##### HOW
 
 - 主服务器收到从服务器重连之后的 `psync`，根据命令中携带的 `slave_repl_offset`与自身的 `master_repl_offset`比较
-
+  
   > 1. 由于**repl_backlog_buffer**是环形的，若主服务器在buffer已满的情况下继续写入会覆盖原本的内容；
   > 2. 两个offset以字节为单位，表示各自进度，如果二者的差值大于repl_backlog_buffer的大小，那么表示从服务器需要同步的数据不在其中，需要**全量同步**；否则**增量同步**。
 
 - 当服务器写的速度远超从服务器读的速度，就会导致频繁全量同步 $\longrightarrow$ 尽可能怎大repl_backlog_buffer尺寸
-
+  
   > 1. 标准：**second * write_size_per_second**;
   > 2. **second**：断连后，从服务器重连上主服务器的平均时间（秒）；
   > 3. **write_size_per_second**：主服务器平均每秒产生的写命令数据量大小；
   > 4. 通过修改配置文件中的 repl_backlog_buffer 参数值；
-</br>
+  >    
+  >    </br>
 
 ## 哨兵（Sentinel）机制
 
@@ -1326,26 +1360,26 @@ Redis2.8及之后版本；
 ![](https://cdn.xiaolincoding.com//picgo/d0bed80d28a543fd8dcd299d4b06cf04.png)
 
 - 只针对主节点；
+
 - 主节点可能因为响应压力大或网络阻塞等问题未能在规定时间内响应PING命令；
+
 - 为了减少对主节点的下线误判$\longrightarrow$部署多个哨兵节点$\longrightarrow$**哨兵集群**（最少三个哨兵节点，且尽量奇数）；
-
 1. 当哨兵节点A判定主节点主观下线，会发送**sentinel is-master-down-by-addr**命令向其他监控此主节点的哨兵询问是否同意该主节点下线；
-
+   
    > 1. sentinel is-master-down-by-addr \<ip> \<port> \<current_epoch>  \<runid>
    > 2. ip、port：询问对应ip地址、端口的redis进程是否下线；
    > 3. current\_epoch：当前纪元；
    > 4. runid：如果为 `当前哨兵节点的runid`，则此命令用于申请自己成为故障处理的leader；如果是 `*`，则此命令用于向其他哨兵节点确认master 是否下线；
-   >
+   > 
    > leader就是后面要选出来负责故障转移的哨兵节点；
-   >
-2. 其他哨兵收到后，检测主节点是否已下线，之后返回一条包含三个参数的回复；
 
+2. 其他哨兵收到后，检测主节点是否已下线，之后返回一条包含三个参数的回复；
+   
    > 1. down\_state：该哨兵节点对于主节点的下线判断，1是下线，0是在线；
    > 2. leader\_runid：当等于 `*`时，代表返回结果是说明主节点是否不可达；当等于具体的runid，代表目标节点同意此runid的对应节点成为 leader；
    > 3. leader\_epoch：该哨兵节点的纪元值，仅在 leader\_runid 值不为 \* 时有效；
-   >
-3. 当哨兵节点A收到其他哨兵节点的回复，若赞同主节点下线的票数达到**配置项quorum**设定值后，主节点被标记为[**客观下线**]；
 
+3. 当哨兵节点A收到其他哨兵节点的回复，若赞同主节点下线的票数达到**配置项quorum**设定值后，主节点被标记为[**客观下线**]；
 - quorum一般设定为**哨兵数量/2+1**
 
 </br>
@@ -1355,11 +1389,12 @@ Redis2.8及之后版本；
 #### 推选Leader
 
 - **epoch纪元**：标记故障转移周期的逻辑时钟，初始=0，可以简单理解为**第几轮选举**；选举有时候并不是一次就能成功选出 leader 的，可能要经过多轮投票选举，才可能选出合适的 leader；
-
 1. 当某个哨兵节点**检测到主节点客观下线**，就作为[候选人]发起选举，**epoch+1**，并向其他哨兵节点发送**sentinel is-master-down-by-addr**命令；
-2. 每个哨兵节点在一个epoch中只能投一次票，通常会投给第一个给自己发sentinel is-master-down-by-addr命令的节点，除了[候选人]的哨兵节点不能投票给自己；
-3. 候选人胜出必须：
 
+2. 每个哨兵节点在一个epoch中只能投一次票，通常会投给第一个给自己发sentinel is-master-down-by-addr命令的节点，除了[候选人]的哨兵节点不能投票给自己；
+
+3. 候选人胜出必须：
+   
    > 1. 得票半数以上；
    > 2. 得票数大于等于quorum值；
 
@@ -1377,45 +1412,47 @@ Redis2.8及之后版本；
 
 详细内容如下表格：
 
-| 参数名      | 说明                                                   |
-| ----------- | ------------------------------------------------------ |
-| server      | 获取 server 信息                                       |
-| clients     | 获取 clients 信息，如客户端连接数等                    |
+| 参数名         | 说明                              |
+| ----------- | ------------------------------- |
+| server      | 获取 server 信息                    |
+| clients     | 获取 clients 信息，如客户端连接数等          |
 | memory      | 获取 server 的内存信息，包括当前内存消耗、内存使用峰值 |
-| persistence | 获取 server 的持久化配置信息                           |
-| stats       | 获取 server 的一些基本统计信息，如处理过的连接数量等   |
-| replication | 获取 server 的主从配置信息                             |
-| cpu         | 获取 server 的 CPU 使用信息                            |
-| keyspace    | 获取 server 中各个 DB 的 key 的数量                    |
-| cluster     | 获取集群节点信息，仅在开启集群后可见                   |
-| commandstas | 获取每种命令的统计信息                                 |
+| persistence | 获取 server 的持久化配置信息              |
+| stats       | 获取 server 的一些基本统计信息，如处理过的连接数量等  |
+| replication | 获取 server 的主从配置信息               |
+| cpu         | 获取 server 的 CPU 使用信息            |
+| keyspace    | 获取 server 中各个 DB 的 key 的数量      |
+| cluster     | 获取集群节点信息，仅在开启集群后可见              |
+| commandstas | 获取每种命令的统计信息                     |
 
 #### 选新主节点
 
 ![](https://cdn.xiaolincoding.com/gh/xiaolincoder/redis/%E5%93%A8%E5%85%B5/%E9%80%89%E4%B8%BB%E8%BF%87%E7%A8%8B.webp)
 
 1. 过滤网络连接状态不好的节点；
-
+   
    > - **down-after-milliseconds * 10**：哨兵检查 `上次从各个节点收到PING命令响应的时间与当前时间的时差`，若时差超过down-after-milliseconds * 10，就pass掉；
-   >
-2. 优先级考察，选出优先级最高的节点；
 
+2. 优先级考察，选出优先级最高的节点；
+   
    > - **slave-priority**：此配置项值越小说明优先级越高；
    > - 哨兵通过定期向从节点发送**INFO**命令，从回复中获取；
    > - 若选出有多个，则进行下一步考察；
-   >
-3. 复制进度考察，选出复制进度最靠前的节点；
 
+3. 复制进度考察，选出复制进度最靠前的节点；
+   
    > - 根据从节点的**slave_repl_offset**与主节点的**master_repl_offset**，越接近的从节点复制进度越靠前；
    > - 同样从**INFO**命令的回复中获取
    > - 若选出有多个，则进行下一步考察；
-   >
-4. ID号考察，选出ID号最小的节点；
 
+4. ID号考察，选出ID号最小的节点；
+   
    > - 通过**INFO**命令的回复获取；
-   >
+
 5. 哨兵Leader向选中的从节点（下称天命点）发送**SLAVEOF no one**命令，解除其从节点身份；
+
 6. 哨兵Leader以**每秒一次**的频率向天命之点发送 `INFO`命令，若收到的回复中的**角色信息**从**slave**变成**master**，表面天命点已经顺利升级；
+
 7. 哨兵Leader向**原主节点的下属从节点**发送**SLAVEOF \<ip> \<port>**命令，使它们指向天命点;
 
 </br>
@@ -1448,7 +1485,7 @@ Redis2.8及之后版本；
 ```java
 # 订阅者
 PSUBSCRIBE news.*
- 
+
 # 发布者
 PUBLISH news.sports "Match started!"
 PUBLISH news.weather "Sunny day!"
@@ -1463,37 +1500,35 @@ PUBLISH news.weather "Sunny day!"
 Redis 使用 **字典（Hash Table）** 和 **链表** 管理 Pub/Sub 的订阅关系：
 
 - **频道订阅字典**：`pubsub_channels`
-
+  
   - Key：频道名称（如 `news.sports`）；
   - Value：订阅该频道的客户端链表（链表节点为客户端指针）；
-
+  
   ```c
   struct redisServer {
       dict *pubsub_channels;  // 频道订阅字典
       list *pubsub_patterns;  // 模式订阅链表
   };
   ```
-
 * **模式订阅链表**：`pubsub_patterns`
   存储包含通配符的订阅关系，每个节点保存：
-
+  
   - 客户端指针；
   - 订阅的模式（如 `news.*`）；
 
 ###### 订阅流程
 
 - **订阅频道（SUBSCRIBE）**：
-
+  
   1. 检查 `pubsub_channels` 字典中是否存在该频道键；
   2. 若不存在，创建新键并将客户端添加到链表；若存在，直接追加到链表末尾；
-
+  
   ```bash
   SUBSCRIBE news.sports  # 客户端订阅频道
   ```
-
 * **订阅模式（PSUBSCRIBE）**：
-将客户端和模式添加到 `pubsub_patterns` 链表；
-
+  将客户端和模式添加到 `pubsub_patterns` 链表；
+  
   ```bash
   PSUBSCRIBE news.*      # 订阅所有以 `news.` 开头的频道
   ```
@@ -1559,8 +1594,9 @@ Redis 使用 **字典（Hash Table）** 和 **链表** 管理 Pub/Sub 的订阅�
 用于处理**数据与实例（节点）间映射关系**，实现 `数据分片`;
 
 - 集群一共**16384**个哈希槽，每个slot可存储一定数量键值对，每个节点负责一部分哈希槽；
-
+  
   > Why is 16384？
+  > 
   > - 为什么不能多？
   >   1. 每个节点要以位图的形式存储每个slot的归属信息，在cluster节点之间使用gossip协议发送心跳包时需要包含此位图，16384b=2KB，不会过度增大包大小而消耗带宽；
   >   2. 16384=2^14^，CRC16算法的输出结果是16 位无符号整数，可通过按位与运算进行高效取模；
@@ -1569,7 +1605,7 @@ Redis 使用 **字典（Hash Table）** 和 **链表** 管理 Pub/Sub 的订阅�
   >   - 数据迁移以槽为单位，槽的数量越少，在总数据量一定的情况下，每个槽的容量就越大，迁移时的粒度就越粗；
 
 - 每个键通过**CRC16**算法计算对应哈希值，再对16384**取模**，得到对应槽位；
-
+  
   <br>
 
 ### 定向
@@ -1579,8 +1615,9 @@ Redis 使用 **字典（Hash Table）** 和 **链表** 管理 Pub/Sub 的订阅�
 #### 整体流程
 
 1. **初始连接**：客户端配置有一个或多个（通常不止一个，为防止当个节点挂了再也连不上）节点的**IP地址**，随机或顺序尝试连接，成功连接上某一结点为止；
-2. **获取槽位图**：连接成功后，客户端发出 `CLUSTER SLOTS`命令，从响应节点返回关于哪些集群槽映射到哪些 Redis 实例的详细信息；返回结果中，包含所有分片的信息，其中单个分片的信息结构如下：
 
+2. **获取槽位图**：连接成功后，客户端发出 `CLUSTER SLOTS`命令，从响应节点返回关于哪些集群槽映射到哪些 Redis 实例的详细信息；返回结果中，包含所有分片的信息，其中单个分片的信息结构如下：
+   
    > 1. start_slot，起始slot号；
    > 2. end_slot,  结束slot号；
    > 3. master_node_info,  **主节点**信息，包含如下：
@@ -1591,17 +1628,18 @@ Redis 使用 **字典（Hash Table）** 和 **链表** 管理 Pub/Sub 的订阅�
    > 4. replica_1_info,  主节点的第一个副本的节点信息；
    > 5. replica_2_info,  主节点的第二个副本的节点信息；
    >    ...
-   >
    > - Redis7.0之后停用CLUSTER SLOTS命令，使用**CLUSTER SHARDS**，具体内容参见官方文档：[CLUSTER SHARDS | 文档 - Redis 文档](https://redis.ac.cn/docs/latest/commands/cluster-shards/)
    > - 其中，对于**endpoint（访问此节点的首选端点）**，是指客户端应该用来跟此Redis节点建立连接的“对外服务地址”，可能是 IP、主机名或者 DNS 名称；
    >   比如：
    >   节点内部 IP是192.168.0.2；
    >   对外用户可能需要访问：redis-node1.company.com；
-   >
-3. 客户端收到 `CLUSTER SLOTS`命令放回结果后，可能与所有主节点建立连接，也可能之后命令需要发给哪个节点再即时建立连接；
-4. 对于每个命令，客户端通过 `slot = CRC16(key) % 16384` 计算key所在的哈希槽，然后在本地缓存中查找该槽，以确定负责该槽的正确主节点，最后将命令直接发送到目标节点；
-5. 对应节点收到后，也算一下key对应的slot，检查此slot是否在自己这：
 
+3. 客户端收到 `CLUSTER SLOTS`命令放回结果后，可能与所有主节点建立连接，也可能之后命令需要发给哪个节点再即时建立连接；
+
+4. 对于每个命令，客户端通过 `slot = CRC16(key) % 16384` 计算key所在的哈希槽，然后在本地缓存中查找该槽，以确定负责该槽的正确主节点，最后将命令直接发送到目标节点；
+
+5. 对应节点收到后，也算一下key对应的slot，检查此slot是否在自己这：
+   
    - 若不在，返回 `MOVED`重定向；
    - 若在，😏窝要腌牌 $\longrightarrow$检查slot中是不是真有这个key：
      1. 有，执行命令并返回结果；
@@ -1715,13 +1753,14 @@ redis 4.0版本源码cluster.h 文件定义的全部消息类型
 ##### 资格检查
 
 - 判断依据:
-
+  
   1. 自己是从节点；
+  
   2. 连接状态正常；
+  
   3. 检查**最后一次与主节点通信的时间**，若时间间隔超过 `cluster-node-timeout * cluster-slave-validity-factor`，则不具备资格；
-
+     
      > **cluster-node-timeout**是集群节点不可用的最大超时时间，**cluster-slave-validity-factor**是系数因子；
-     >
 
 ##### 延迟等待
 
@@ -1785,24 +1824,25 @@ tip：后续以 [数据库] 代指硬盘层的数据库；
 ###### 后台更新缓存 + 缓存预热
 
 - 业务线程不负责缓存的数据更新，交由**后台更新线程**进行更新；
+
 - 对所有缓存数据**不设置过期时间**或**设置较大的过期时间**，使得除了数据量太大达到Redis最大容量触发**内存淘汰**，不会从缓存中淘汰数据；
+
 - 后台更新线程有两种工作方式：
-
+  
   1. 既负责**定期**将数据存入缓存，又负责检查数据在缓存中是否有效；
-
+     
      > - 并不是要所有的数据必须全部都在缓存中，这会导致：键A不在$\rightarrow$更新键A$\rightarrow$Redis过大，内存淘汰$\rightarrow$键B移出$\rightarrow$键B不在$\rightarrow$更新键B$\rightarrow$……  这样的矛盾死循环；
      > - 只检查**热点数据（被频繁访问的数据）**、**人为指定必须常驻的数据**；
      > - 检查出需要放入缓存的数据会在下次更新时放入；
      > - 检查和更新未必连续进行；
-     >
+  
   2. 事件驱动；
-
+     
      > - 业务线程访问缓存数据未命中时，通过**消息队列发送消息通知后台更新线程更新缓存**；
-     >
-- 缓存预热：
 
+- 缓存预热：
+  
   > - 业务刚上线时，在业务线程访问之前，提前把数据放入缓存；
-  >
 
 ##### 针对Redis故障宕机
 
@@ -1907,11 +1947,11 @@ tip：后续以 [数据库] 代指硬盘层的数据库；
 不难发现，在加入元素的过程中，可能存在类似以下的情况：
 
 > 设数组下标 0-2；
->
+> 
 > - 元素A的哈希值为0、1；
 > - 元素B的哈希值为1、2；
 > - 元素C的哈希值为0、2；
->
+> 
 > 那么插入这三个元素中的任意两个元素后，第三个元素不管是否存在，在判断存在时都会得到**true**的结果；
 
 ###### 概率（数组长度=n；元素数量=m；哈希函数数量=k）
@@ -1998,14 +2038,17 @@ P $\approx$(1 - e^(-km/n)^)^k^
 ##### 写策略
 
 - 删除缓存中数据，更新数据库中数据；（删除缓存数据而非更新，是因为前者代价更小、开销更低、风险更小）
+
 - 当读、写请求并发时，删除和更新无论谁前谁后都可能出现不一致问题；
+  
   1. 先删后更
      ![](https://cdn.xiaolincoding.com//mysql/other/cc208c2931b4e889d1a58cb655537767.png)
+  
   2. 先更后删
-
+     
      - 理论上会出现下图所示的情况，但考虑到**访问缓存的速度比访问数据库快**，所以第一个请求更新缓存**一般**会比第二个请求更新数据库早完成；
      - 在先更后删的基础上，为缓存数据加上**过期时间**，就能保证**最终一致**，但会**存在短暂的不一致窗口**；
-
+     
      ![](https://cdn.xiaolincoding.com//mysql/other/1cc7401143e79383ead96582ac11b615.png)
 
 ##### 缺陷
@@ -2033,9 +2076,10 @@ P $\approx$(1 - e^(-km/n)^)^k^
 ##### 写穿透
 
 1. 应用程序写数据到缓存；
-2. 缓存**立即**将更改的数据同步到数据库；
-3. 在收到数据库的响应之前，缓存会被阻塞；
 
+2. 缓存**立即**将更改的数据同步到数据库；
+
+3. 在收到数据库的响应之前，缓存会被阻塞；
 - 若缓存更新成功，但在更新数据库时，由于网络异常等问题出现错误，此时缓存保存了新数据，但数据库是旧数据；
 
 #### 延时双删

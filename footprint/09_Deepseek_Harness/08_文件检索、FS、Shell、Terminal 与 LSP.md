@@ -4,6 +4,15 @@
 
 dsh 没有把“操作工作区”做成一个万能工具：FS seam 提供可替换的存储原语，FS tools 负责窗口化读取与受观察写入，Search 独立用打包的 ripgrep + subprocess，Shell 处理一次性命令，Terminal 处理持久 PTY，LSP 只暴露四个只读语义操作；这些能力能否出现由 composition 决定，而非目录存在即默认启用。
 
+## 源码阅读路线
+
+按以下顺序打开源码；链接固定到本次核对时的实际行号。
+
+1. [注册文件工具](<D:/codes/deepseek-harness/packages/fs/tool-fs/src/index.ts#L54>)：packages/fs/tool-fs/src/index.ts。
+2. [选择搜索二进制](<D:/codes/deepseek-harness/packages/fs/tool-fs-search/src/search-core.ts#L171>)：packages/fs/tool-fs-search/src/search-core.ts。
+3. [持久终端 ownership](<D:/codes/deepseek-harness/packages/terminal/terminal/src/index.ts#L66>)：packages/terminal/terminal/src/index.ts。
+4. [语义工具 consumer](<D:/codes/deepseek-harness/packages/lsp/tool-lsp/src/index.ts#L97>)：packages/lsp/tool-lsp/src/index.ts。
+
 ## 2. 源码调用链与数据流
 
 ### 2.1 FS 四层
@@ -32,7 +41,7 @@ glob / grep
   → capped inline result + optional spill artifact
 ```
 
-Search 不依赖 `ctx.fs`，也不调用系统 `rg`；打包二进制通过 subprocess seam 执行，模型参数是 argv element 而非 shell string。`globMaxResults` 默认 100，`grepMaxMatches` 250，超出部分只有在完整 raw stdout 已捕获、解析成功且 formatted spill 保存成功时才可完整取回。raw `rg` stdout 默认最多 20,000,000 bytes；超过预算或 subprocess 仍报告 lossy 时整个调用以 `SEARCH_RAW_OUTPUT_OVERFLOW` 失败，不会拿不完整 tail 冒充搜索全集。Search workdir 与 FS provider 是否指向同一 execution world 没有运行时证明；远程/虚拟 FS 若不共置，搜索出的路径可能无法被 `read` 读取。
+Search 不依赖 `ctx.fs`，也不从 PATH 任意选 `rg`；`resolveRgPath()` 在单文件 runtime 优先选可执行文件旁的 `-rg` helper，Node 模式使用 `@vscode/ripgrep` 平台包，再通过 subprocess seam 执行，模型参数是 argv element 而非 shell string。`globMaxResults` 默认 100，`grepMaxMatches` 250，超出部分只有在完整 raw stdout 已捕获、解析成功且 formatted spill 保存成功时才可完整取回。raw `rg` stdout 默认最多 20,000,000 bytes；超过预算或 subprocess 仍报告 lossy 时整个调用以 `SEARCH_RAW_OUTPUT_OVERFLOW` 失败，不会拿不完整 tail 冒充搜索全集。Search workdir 与 FS provider 是否指向同一 execution world 没有运行时证明；远程/虚拟 FS 若不共置，搜索出的路径可能无法被 `read` 读取。
 
 ### 2.3 Shell 一次性命令
 
@@ -67,7 +76,7 @@ lsp tool
 
 ### 2.6 默认挂载边界
 
-`dsh-base` 默认挂载 sandboxed Shell/Pwsh、generic jobs controller、`tool-fs` 与 `tool-fs-search`。Terminal 与 LSP packages 存在且有 ACP/headless snapshot composition，但不在 base 默认工具面；只有 preset 或 overlay 明确挂载 service、provider、consumer 的完整角色后，模型才能使用。
+`dsh-base` 默认挂载 sandboxed Shell/Pwsh、generic jobs controller、`tool-fs` 与 `tool-fs-search`。Terminal 与 LSP packages 存在且有显式测试组合，但不在 base 默认工具面；只有 preset 或 overlay 明确挂载 service、provider、consumer 的完整角色后，模型才能使用。
 
 ## 3. 设计取舍
 
@@ -103,24 +112,32 @@ lsp tool
 4. 从 `tool-lsp` 的 one-based 参数跟到 `lsp-stdio` 的 JSON-RPC position，核对 UTF-16 转换。
 5. 在 base、ACP 与 headless compositions 中分别查找 Terminal/LSP rows，判断哪些是产品默认、测试示例或显式 overlay。
 
+## 持久 Shell、图片引用与检索的组合限制
+
+`minimal` preset 在 POSIX 挂持久 bash，在 Windows 挂持久 pwsh，两者都借 Terminal 保存状态；另一个模型工具是 str_replace_editor。终端 backend 仍消费 host sandbox policy，bare fs-local 编辑器则要单独审视，不能由“极简”推断更严格权限。
+
+图片结果的 attachment reference 与临时路径不同。一次请求要由当前路由确认图片输入能力，后续回放、fork 和导出还需要对象存储中的真实字节；只有 JSONL 引用并不构成可携带的完整图片备份。
+
+全文搜索、LSP、Web search 各解决不同问题：glob/grep 找工作区文本，LSP 解析符号语义，Web provider 获取外部信息。Web search/fetch 的 Service Definition、provider、consumer 可在 [packages/web/](<D:/codes/deepseek-harness/packages/web/>) 独立追踪；某 provider 包存在不代表当前会话挂载或拥有其凭据。
+
 ## 7. 证据索引
 
-- `packages/fs/fs/src/index.ts`
-- `packages/fs/fs-local/src/index.ts`
-- `packages/fs/fs-sandbox/src/index.ts`
-- `packages/fs/fs-observation-policy/src/index.ts`
-- `packages/fs/tool-fs/src/index.ts`
-- `packages/fs/tool-fs-search/src/index.ts`
-- `packages/fs/tool-fs-search/src/search-core.ts`
-- `packages/attachment/attachment/README.md`
-- `packages/attachment/attachment-local/README.md`
-- `packages/shell/shell/src/index.ts`
-- `packages/shell/tool-bash/src/index.ts`
-- `packages/terminal/terminal/src/index.ts`
-- `packages/terminal/tool-terminal/src/index.ts`
-- `packages/lsp/lsp/src/index.ts`
-- `packages/lsp/lsp-stdio/src/index.ts`
-- `packages/lsp/tool-lsp/src/index.ts`
-- `packages/bundle/base/cordis.patch.yml`
-- `examples/acp-agent/pty.cordis.yml`
-- `examples/acp-agent/tests/lsp.cordis.yml`
+- [packages/fs/fs/src/index.ts](<D:/codes/deepseek-harness/packages/fs/fs/src/index.ts#L1>)
+- [packages/fs/fs-local/src/index.ts](<D:/codes/deepseek-harness/packages/fs/fs-local/src/index.ts#L1>)
+- [packages/fs/fs-sandbox/src/index.ts](<D:/codes/deepseek-harness/packages/fs/fs-sandbox/src/index.ts#L1>)
+- [packages/fs/fs-observation-policy/src/index.ts](<D:/codes/deepseek-harness/packages/fs/fs-observation-policy/src/index.ts#L1>)
+- [packages/fs/tool-fs/src/index.ts](<D:/codes/deepseek-harness/packages/fs/tool-fs/src/index.ts#L1>)
+- [packages/fs/tool-fs-search/src/index.ts](<D:/codes/deepseek-harness/packages/fs/tool-fs-search/src/index.ts#L1>)
+- [packages/fs/tool-fs-search/src/search-core.ts](<D:/codes/deepseek-harness/packages/fs/tool-fs-search/src/search-core.ts#L1>)
+- [packages/attachment/attachment/README.md](<D:/codes/deepseek-harness/packages/attachment/attachment/README.md#L1>)
+- [packages/attachment/attachment-local/README.md](<D:/codes/deepseek-harness/packages/attachment/attachment-local/README.md#L1>)
+- [packages/shell/shell/src/index.ts](<D:/codes/deepseek-harness/packages/shell/shell/src/index.ts#L1>)
+- [packages/shell/tool-bash/src/index.ts](<D:/codes/deepseek-harness/packages/shell/tool-bash/src/index.ts#L1>)
+- [packages/terminal/terminal/src/index.ts](<D:/codes/deepseek-harness/packages/terminal/terminal/src/index.ts#L1>)
+- [packages/terminal/tool-terminal/src/index.ts](<D:/codes/deepseek-harness/packages/terminal/tool-terminal/src/index.ts#L1>)
+- [packages/lsp/lsp/src/index.ts](<D:/codes/deepseek-harness/packages/lsp/lsp/src/index.ts#L1>)
+- [packages/lsp/lsp-stdio/src/index.ts](<D:/codes/deepseek-harness/packages/lsp/lsp-stdio/src/index.ts#L1>)
+- [packages/lsp/tool-lsp/src/index.ts](<D:/codes/deepseek-harness/packages/lsp/tool-lsp/src/index.ts#L1>)
+- [packages/bundle/base/cordis.patch.yml](<D:/codes/deepseek-harness/packages/bundle/base/cordis.patch.yml#L1>)
+- [packages/preset/agent-presets/presets/minimal/agent.cordis.yml](<D:/codes/deepseek-harness/packages/preset/agent-presets/presets/minimal/agent.cordis.yml#L1>)
+- [packages/lsp/tool-lsp/src/index.ts](<D:/codes/deepseek-harness/packages/lsp/tool-lsp/src/index.ts#L1>)

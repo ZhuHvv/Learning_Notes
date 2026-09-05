@@ -1,6 +1,7 @@
 # 08.08 Claude Code Skills：发现预算、调用控制与安全边界
 
-> **源码审查更正（2026-08-15）**：当前 `anthropics/claude-code` GitHub 仓库公开的是插件、示例和维护脚本，不含 Claude Code CLI/harness 的完整实现。本篇只能把官方 Skills、Tools、Permissions 与 Hooks 文档列为当前产品行为的证据。`description + when_to_use` 的 **1,536 字符截断**、`disable-model-invocation`、`user-invocable` 和 `allowed-tools` 有公开文档依据；下文关于 `skillListingBudgetFraction`、`skillOverrides`、按调用频率移除描述、`/doctor` 的 listing 计费，以及 `SLASH_COMMAND_TOOL_CHAR_BUDGET` 的结论，没有在当前公开仓库或官方 Skills 文档中得到验证，不得作为当前配置接口或稳定运行机制使用。应改写为“特定构建的逆向线索，待以目标版本实测验证”。
+> 核验：2026-09-05；本地源码 `d7dbd9a`，发行记录至 `2.1.261`。撤销旧页首把预算设置和 skillOverrides 判为未验证的结论：2026-09-05 官方 Skills 页面已明确列出；本地源码只验证具体 Skill 内容。
+
 
 ## 1. 一句话定位
 
@@ -38,7 +39,7 @@ Skill listing 的长度判断属于 prompt/context assembly 的预处理，不�
 
 因此模型从一开始看到的就是裁剪后 listing，并不知道某段 description 原本多长。`/context` 的 Skills 行显示预算应用后的实际大小，这也与该执行顺序一致。
 
-这与会话进行一段时间后触发的 auto-compaction 是两套机制：前者压缩“待暴露的能力索引”，后者清理或摘要“已经进入历史的对话和工具结果”。压缩后 Skill 正文的重挂载规则详见 `04_Claude_Code_上下文压缩、Microcompact_与状态恢复.md`。
+这与会话进行一段时间后触发的 auto-compaction 是两套机制：前者压缩“待暴露的能力索引”，后者清理或摘要“已经进入历史的对话和工具结果”。压缩后 Skill 正文的重挂载规则详见 [04_Claude_Code_上下文压缩、Microcompact_与状态恢复.md](04_Claude_Code_上下文压缩、Microcompact_与状态恢复.md)。
 
 ### 1.2 `Skill` tool 是按需加载器
 
@@ -114,7 +115,7 @@ Skill 被调用后，渲染正文会留在会话上下文中，后续轮次不�
 
 只剩名称时，Claude 仍可能调用该 Skill，但自动匹配能力会下降。名称如果过于模糊，例如 `db-helper`，模型很难判断它究竟用于死锁、迁移还是查询优化。
 
-可以用 `/doctor` 估算 listing 成本和主要贡献者；超预算时也会写入 debug 日志。`/context` 中的 Skills 行显示预算应用后模型实际收到的 listing 大小。
+可以用 `/doctor` 估算 listing 成本和主要贡献者；新增 `/skill-doctor` 用于查看使用情况与占用；超预算时也会写入 debug 日志。`/context` 中的 Skills 行显示预算应用后模型实际收到的 listing 大小。
 
 固定字符预算还可以通过环境变量覆盖：
 
@@ -249,7 +250,7 @@ PreToolUse Hook 校验
 
 还有两个容易误解的字段：
 
-- `allowed-tools` 是 Skill 激活期间的临时预授权，不是“只允许这些工具”的白名单；
+- `allowed-tools` 是调用所在回合的临时预授权，下一条用户消息到来时清除；Skill 正文仍可留在上下文。它不是“只允许这些工具”的白名单；
 - 需要在 Skill 激活期间移除工具时，使用 `disallowed-tools`；需要跨 Skill、跨提示持续阻止时，使用全局或项目权限 deny 规则。
 
 ## 8. 设计建议
@@ -279,9 +280,9 @@ PreToolUse Hook 校验
 ## 10. 关联知识点
 
 - `../02_Agent_RAG_Memory/05_Agent_Skills_模块化能力扩展.md`
-- `01_Claude_Code_Prompt_前缀缓存与三级上下文.md`
-- `04_Claude_Code_上下文压缩、Microcompact_与状态恢复.md`
-- `06_Claude_Code_Agent_Loop、Query_生命周期与工具编排.md`
+- [01_Claude_Code_Prompt_前缀缓存与三级上下文.md](01_Claude_Code_Prompt_前缀缓存与三级上下文.md)
+- [04_Claude_Code_上下文压缩、Microcompact_与状态恢复.md](04_Claude_Code_上下文压缩、Microcompact_与状态恢复.md)
+- [06_Claude_Code_Agent_Loop、Query_生命周期与工具编排.md](06_Claude_Code_Agent_Loop、Query_生命周期与工具编排.md)
 - `../07_Backend_Deploy_Network/08_沙箱、权限与工具执行安全.md`
 
 ## 11. 参考资料与事实边界
@@ -294,3 +295,17 @@ PreToolUse Hook 校验
 - 本次整理来源：[技术问题解答准则分享对话](https://chatgpt.com/share/6a69fbe0-2524-83ec-b330-b1326ce3d368)
 
 具体默认值、字段名和版本条件属于产品行为，后续升级时应以官方 Settings 与 Skills 页面为准；文中的调用链是对公开行为的机制化表达，不等于 Anthropic 公开了完整内部源码。
+
+## 12. 本次真实代码变更：frontend-design 的两遍设计流程
+
+本次基线比较中，真正改变的 Skill 是 [plugins/frontend-design/skills/frontend-design/SKILL.md](D:/codes/claude-code/plugins/frontend-design/skills/frontend-design/SKILL.md#L1)，不是 Skills 加载器。
+
+| 位置 | 当前指令要求 | 证据等级 |
+|---|---|---|
+| [plugins/frontend-design/skills/frontend-design/SKILL.md](D:/codes/claude-code/plugins/frontend-design/skills/frontend-design/SKILL.md#L13) | 主题不明确时先提出受众、主题和用途，并与客户确认 | Markdown 行为要求 |
+| [plugins/frontend-design/skills/frontend-design/SKILL.md](D:/codes/claude-code/plugins/frontend-design/skills/frontend-design/SKILL.md#L47) | 先写颜色、字体、布局、原则的简短方案 | Markdown 行为要求 |
+| [plugins/frontend-design/skills/frontend-design/SKILL.md](D:/codes/claude-code/plugins/frontend-design/skills/frontend-design/SKILL.md#L53) | 对照需求复核方案，再开始写代码 | Markdown 行为要求 |
+
+没有代码解析这几个段落并持久化成状态机；不能据此宣称 CLI 新增了强制设计审批引擎。评估这个变更，应比较相同需求在更新前后的设计产物，而不是仅统计提示词长度。
+
+`/skill-doctor` 在本地日志记于 2.1.261，见 [本地发行记录](D:/codes/claude-code/CHANGELOG.md#L8)；[官方 Skills 页面](https://code.claude.com/docs/en/skills#find-unused-skills)写最低 2.1.252，并列出会话条件。二者不完全一致，保留差异，不自行合并成唯一首次上线日期。

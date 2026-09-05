@@ -1,6 +1,7 @@
 # 08.01 Claude Code Prompt 前缀缓存与三级上下文
 
-> **源码审查更正（2026-08-15）**：当前公开仓库没有 CLI/harness 源码，不能用它证明请求组装细节。本篇的“精确前缀匹配、三层上下文、模型与 effort 的缓存行为、`/compact` 的影响”应以 Claude Code Prompt Caching 官方文档为准；“20 个 content block 回溯、4 个断点槽位、TTL 环境变量和 API `cache_control` 的全部细节”是 Claude API 层或版本相关资料，不能直接断言为 Claude Code 当前实现。请将这两类证据分开标注。
+> 核验：2026-09-05；本地源码 `d7dbd9a`，发行记录至 `2.1.261`。基础原理、产品文档与仓库实现分别标注；本仓库不含请求组装器。
+
 
 ## 1. 总体性概念
 
@@ -81,7 +82,7 @@ Claude API 支持两种方式：
 当前断点 → 前一个 block → ... → 最多检查 20 个位置
 ```
 
-这里的 20 指 **content block**，不是 20 个 token、20K token、20 条 message 或 20 轮对话。一个 message 可以包含多个 text、image、tool use 或 tool result block。
+这里的 20 是回溯位置预算，包含断点自身，不是 20 个 token、20K token、20 条 message 或 20 轮对话。当前 Claude API 文档还说明：连续 tool_use 块算一个位置，连续 tool_result 块也算一个位置；不能简单按并行调用个数推导回溯预算耗尽。普通独立块仍可用下例理解。
 
 三个关键规则：
 
@@ -97,7 +98,7 @@ Turn 2：Block 1 ... 15 [断点] → 回溯到 10，命中
 Turn 3：Block 1 ... 35 [断点] → 只检查 35...16，找不到 15
 ```
 
-因此，在一轮中一次追加大量 content block 时，即使旧缓存仍在 TTL 内，也可能因为超出回溯窗口而无法被找到。
+因此，一轮追加内容使回溯位置超过预算时，即使旧缓存仍在 TTL 内，也可能找不到；连续工具块的合并计数需要按上述 API 规则处理。
 
 ## 3. 为什么未来内容不会改变旧前缀
 
@@ -184,7 +185,7 @@ Read + Write + Bash + PostgreSQL MCP
 
 这里要区分 Claude Code 的 **effort level** 与 Claude API 请求中的 **thinking 参数**：
 
-- 当前 Claude Code 官方 Prompt Caching 文档说明，effort level 不属于 prompt，也不进入 Claude Code 的 cache key，中途调整不会导致缓存失效；
+- 2026-09-05 核对的官方 Prompt Caching 文档说明：多数模型中途调整 effort 会造成缓存失配；Fable 5.1 在特定直接接入条件下，自 v2.1.260 起可保留缓存。不能再写成“effort 一律不影响缓存”；
 - Claude API 的工具缓存文档说明，改变实际发送的 thinking 参数会使 messages 层缓存失效；
 - 因此不能把“调整 Claude Code effort”和“改变 API thinking 配置”写成同一个动作。
 
@@ -212,21 +213,22 @@ input_tokens                 = 最后缓存断点之后按普通输入处理的 
 
 若创建与读取字段都是 0，常见原因是没有启用缓存，或可缓存前缀没有达到当前模型的最小 token 门槛。门槛、TTL、价格和模型支持范围会变化，应以当前官方文档为准。
 
-### 5.2 TTL 与 Claude Code 的实际共享范围
+### 5.2 TTL 与主会话、后台请求的分桶配置
 
-当前 Claude API 提供 5 分钟与 1 小时两种 TTL。Claude Code 会按认证方式选择默认值：
+TTL（缓存生存时间）现在应分主会话与子 Agent 等其它请求讨论。旧笔记只列两个全局环境变量，遗漏了独立配置。
 
-- Claude 订阅通常使用 1 小时 TTL；若超出套餐额度并转为 usage credits，会降为 5 分钟；
-- API key、Bedrock、Vertex、Foundry 等按 token 计费的路径默认使用 5 分钟；
-- `ENABLE_PROMPT_CACHING_1H=1` 可为后者请求 1 小时 TTL，`FORCE_PROMPT_CACHING_5M=1` 可强制 5 分钟。
+```json
+{
+  "promptCacheTtl": "1h",
+  "subagentPromptCacheTtl": "5m"
+}
+```
 
-“同一账号的任何会话都能互相命中”也不准确。Claude Code 的 system prompt 会包含工作目录、平台、Shell、系统版本、Auto memory 路径和启动时 Git 状态等信息，因此：
+上例只说明两类请求可以选不同 TTL，不意味着所有账号都应采用它。[本地发行记录](D:/codes/claude-code/CHANGELOG.md#L539) 将该设置记在 2.1.243；官方页面写最低版本为 2.1.242，两处版本口径不同，本文不把发行记录条目当作精确首次可用版本。
 
-- 同一机器、同一目录、相同启动状态的并行 session 更可能共享前缀；
-- 不同目录或不同 worktree 通常会因工作目录不同而失配；
-- 即使目录相同，启动时分支或 Git 状态快照不同也可能使前缀不同。
+当前[官方缓存说明](https://code.claude.com/docs/en/prompt-caching#choose-the-ttl-yourself)还列出对应环境变量 `CLAUDE_CODE_PROMPT_CACHE_TTL` 与 `CLAUDE_CODE_SUBAGENT_PROMPT_CACHE_TTL`。全局强制五分钟优先于分桶环境变量，后者优先于分桶设置；Agent 的 `experimental.cacheTtl` 只是后续回退项。不要把 TTL 配置理解成缓存必命中：前缀、模型与服务提供方条件仍须满足。
 
-底层 API 缓存的组织隔离范围更宽，但 Claude Code 注入的环境内容使产品层的有效共享范围通常更窄。
+跨会话能否复用，应以实际输入前缀与 usage 为准，不能仅凭“同账号”“同目录”判断。仓库没有缓存键实现，不能用这里的环境字段示意推导精确哈希内容。
 
 ## 6. Claude Code 的工程设计取向
 
@@ -261,9 +263,9 @@ Prompt Cache 要求前缀稳定，因此 Claude Code 的多项公开行为都采
 - `../01_LLM_Transformer/07_Causal_Mask、自回归生成与_KV_Cache.md`
 - `../02_Agent_RAG_Memory/01_Prompt_工程：User_Prompt_与_System_Prompt.md`
 - `../02_Agent_RAG_Memory/05_Agent_Skills_模块化能力扩展.md`
-- `002_Claude_Code_流式输出、max_tokens_与恢复机制.md`
-- `003_Claude_Code_代码检索：ripgrep_与_grep.md`
-- `004_Claude_Code_上下文压缩、Microcompact_与状态恢复.md`
+- [02_Claude_Code_流式输出、max_tokens_与恢复机制.md](02_Claude_Code_流式输出、max_tokens_与恢复机制.md)
+- [03_Claude_Code_代码检索：ripgrep_与_grep.md](03_Claude_Code_代码检索：ripgrep_与_grep.md)
+- [04_Claude_Code_上下文压缩、Microcompact_与状态恢复.md](04_Claude_Code_上下文压缩、Microcompact_与状态恢复.md)
 
 ## 10. 参考资料与事实边界
 
@@ -285,3 +287,11 @@ Prompt Cache 要求前缀稳定，因此 Claude Code 的多项公开行为都采
 5. `/compact` 为什么主要使对话层失配，而稳定前缀仍可能复用？
 6. 20-block 回溯查找的是稳定文本，还是此前真正写入过的缓存项？
 7. 应通过哪些 usage 字段确认缓存创建和读取？
+
+## 12. 本次版本变化与排查入口
+
+先看 [本地发行记录](D:/codes/claude-code/CHANGELOG.md#L306)：2.1.251 给 `/cost` 增加会话缓存观测。再看 [本地发行记录](D:/codes/claude-code/CHANGELOG.md#L123)：2.1.260 的 effort 优化明确限定模型。
+
+排查顺序：记录版本与模型 → 看缓存冷热与命中量 → 检查是否切模型、改工具或改历史 → 再检查 TTL。2.1.248 修复过 OAuth 刷新引发工具定义重渲染和缓存失配，说明“用户没改文本”不保证实际请求前缀没变。
+
+这些是发行记录中的行为修复，不是我们读取到了缓存模块源码。

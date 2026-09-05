@@ -1,14 +1,14 @@
 # 08.09 Claude Code 仓库中的审查漏斗、有界自循环与两阶段自动化
 
-> 审查日期：2026-08-15  
-> 仓库版本：`0fa8c19d50f70f9f383fb6ff5ce5209575267d21`
+> 审查日期：2026-09-05
+> 仓库版本：`d7dbd9a09f59775726ed14bbea8fc9dfdff62f7b`
 
 ## 1. 先给结论
 
 在 01～08 已讨论的 Prompt Cache、流式输出、检索、上下文压缩、Subagent、Agent Loop、记忆和 Skills 之外，当前公开仓库中仍有四组很值得 agent/harness 开发者学习的机制：
 
 1. **高召回候选发现 + 独立逐项复核 + 延迟副作用**：`code-review` 不是把多个 reviewer 的输出直接相加，而是把“发现问题”和“确认问题”拆成两道不同的关。
-2. **Stop Hook 驱动的外部有界自循环**：`ralph-wiggum` 把“是否继续”放在模型之外，由 Hook、状态文件、transcript 和终止条件共同决定。
+2. **Stop Hook 驱动、可配置上限的外部自循环**：`ralph-wiggum` 把“是否继续”放在模型之外，由 Hook、状态文件、transcript 和终止条件共同决定。
 3. **按认知阶段和正交视角组织多 Agent**：`feature-dev` 先探索、再澄清、再设计、后实现；子 Agent 返回证据索引，主 Agent 必须重新读取关键文件，而不是盲信二手摘要。
 4. **建议、冷静期、人工否决、再执行的两阶段自动化**：issue 维护脚本不会在检测到候选后立即关闭，而是等待、检查后续人工活动和否决信号，再实施外部副作用。
 
@@ -43,7 +43,7 @@
 多个 reviewer 并行提出候选问题
           │
           ▼
-每个候选问题交给新的 validator 独立复核
+第 3/4 个 bug reviewer 的候选交给新 validator 复核
           │
           ▼
 只保留验证通过的问题
@@ -54,14 +54,14 @@
 
 关键不在于用了几个 Agent，而在于把两种目标分开：
 
-- **候选发现阶段追求召回率**：允许多个视角并行，尽量不要漏掉真问题。
+- **候选发现阶段提供多个视角**：但本命令同时要求高信号，甚至排除依赖特定输入或状态的问题；它并不是无约束追求高召回。
 - **复核阶段追求精确率**：验证具体事实、规则作用域和 PR 意图，过滤似是而非的问题。
 
 如果直接汇总多个 reviewer，Agent 数量越多，误报通常也越多；“再加一个 reviewer”并不会自动提高可信度。这里增加的是一个角色不同的 validator，相当于在生成器之后放置判别器。
 
 仓库证据：
 
-- 预检命中任一条件就停止：`plugins/code-review/commands/code-review.md:14-20`。
+- 预检命中任一条件就停止：[plugins/code-review/commands/code-review.md:14](D:/codes/claude-code/plugins/code-review/commands/code-review.md#L14)。
 - 四个 Agent 并行提出候选：同文件 `:30-53`。
 - 每个候选再启动独立 Agent 验证：同文件 `:55`。
 - 未通过复核的候选全部过滤：同文件 `:57`。
@@ -157,19 +157,19 @@ type Finding = {
 - 启动时间；
 - 原始任务 prompt。
 
-当 Agent 尝试结束时，Stop Hook 读取 transcript 的最后一条 assistant 文本，并按下列状态机处理：
+当 Agent 尝试结束时，Stop Hook 读取 transcript 的最后一条 assistant 文本。以下是正常与显式保护分支；不涵盖所有异常：
 
 ```text
 没有状态文件 ───────────────► allow stop
       │
       ▼
-状态损坏 / transcript 不可读 ─► 清理状态并 allow stop
+命中显式异常保护分支 ──────► 清理状态并 allow stop
       │
       ▼
 达到 max_iterations ─────────► 清理状态并 allow stop
       │
       ▼
-精确命中 completion promise ─► 清理状态并 allow stop
+提取结果等于 completion promise ► 清理状态并 allow stop
       │
       ▼
 iteration + 1，原子更新状态文件
@@ -180,8 +180,8 @@ iteration + 1，原子更新状态文件
 
 仓库证据：
 
-- Setup 脚本创建 YAML frontmatter + prompt 的本地状态文件：`plugins/ralph-wiggum/scripts/setup-ralph-loop.sh:130-149`。
-- Hook 先校验迭代数字段，再检查最大轮数：`plugins/ralph-wiggum/hooks/stop-hook.sh:20-55`。
+- Setup 脚本创建 YAML frontmatter + prompt 的本地状态文件：[plugins/ralph-wiggum/scripts/setup-ralph-loop.sh:130](D:/codes/claude-code/plugins/ralph-wiggum/scripts/setup-ralph-loop.sh#L130)。
+- Hook 先校验迭代数字段，再检查最大轮数：[plugins/ralph-wiggum/hooks/stop-hook.sh:20](D:/codes/claude-code/plugins/ralph-wiggum/hooks/stop-hook.sh#L20)。
 - 最后一条 assistant 消息从 JSONL transcript 提取，而不是依赖当前进程内变量：同文件 `:57-111`。
 - completion promise 做标准化后的字面量相等比较：同文件 `:114-127`。
 - 迭代数通过临时文件 + `mv` 更新，避免半写状态：同文件 `:152-156`。
@@ -201,7 +201,7 @@ iteration + 1，原子更新状态文件
 
 ### 3.3 巧妙之处：坏状态默认结束，而不是无限阻塞
 
-Ralph 在状态字段非法、transcript 不存在、JSON 解析失败、最后消息为空时，会删除状态并允许停止。这是一个很务实的 **fail-open for liveness** 选择：循环控制器自身故障时，优先避免会话被永久困住。
+Ralph 对非法数字、缺失 transcript、空文本等设置了清理分支。但脚本启用 `set -euo pipefail`：缺失字段导致 grep 失败，或赋值中的 jq 返回非零时，可能在后续检查前退出，因此不能保证所有坏状态都会被清理。这是一个很务实的 **fail-open for liveness** 选择：循环控制器自身故障时，优先避免会话被永久困住。
 
 安全控制不一定都应 fail-open。例如执行付款或删库的权限校验更适合 fail-closed。harness 应按风险显式选择：
 
@@ -213,7 +213,7 @@ Ralph 在状态字段非法、transcript 不存在、JSON 解析失败、最后�
 
 ### 3.4 completion promise 的局限：它是自我声明，不是外部证明
 
-精确 XML 标签能避免模糊文本误触发，但“模型输出了完成声明”不等于任务真的完成。提示词强调“不要撒谎”仍属于软约束。更成熟的 harness 应将终止条件分层：
+源码用 Perl 替换提取 `<promise>`，但没有先验证标签存在：替换不匹配时会保留原文本，所以裸文本刚好等于 completion promise 也可能命中。不能称为严格 XML 校验。即使正确提取，“模型输出了完成声明”仍不等于任务真的完成。提示词强调“不要撒谎”仍属于软约束。更成熟的 harness 应将终止条件分层：
 
 ```text
 硬终止：预算耗尽、人工取消、超时、策略拒绝
@@ -285,7 +285,7 @@ const stop =
 
 ### 4.3 子 Agent 的摘要只是导航，不是最终证据
 
-该命令明确要求 explorer 返回 5～10 个关键文件，并要求主 Agent 在子 Agent 完成后亲自读取这些文件（`plugins/feature-dev/commands/feature-dev.md:41-53`）。这解决了常见的“摘要套摘要”问题：
+该命令明确要求 explorer 返回 5～10 个关键文件，并要求主 Agent 在子 Agent 完成后亲自读取这些文件（[plugins/feature-dev/commands/feature-dev.md:41](D:/codes/claude-code/plugins/feature-dev/commands/feature-dev.md#L41)）。这解决了常见的“摘要套摘要”问题：
 
 ```text
 错误模式：文件 → 子 Agent 摘要 → 主 Agent 再摘要 → 设计
@@ -339,7 +339,7 @@ const capabilities = {
 
 仓库证据：
 
-- 三天冷静期：`scripts/auto-close-duplicates.ts:112-115,181-195`；
+- 三天冷静期：[scripts/auto-close-duplicates.ts:112](D:/codes/claude-code/scripts/auto-close-duplicates.ts#L112)；
 - 后续评论会阻止关闭：同文件 `:203-216`；
 - 作者点踩可否决：同文件 `:218-241`；
 - 通过所有门后才执行关闭：同文件 `:243-261`。
@@ -366,7 +366,7 @@ execute / cancel
 
 ### 5.3 dry-run 是副作用系统的第一等能力
 
-`scripts/sweep.ts:8,78-85,140-147,163` 提供 `--dry-run`，让同一套选择逻辑可以只报告“将要做什么”。好的 agent tool 也应把 `plan` 与 `apply` 设计成同一语义的两个模式：
+[scripts/sweep.ts:8](D:/codes/claude-code/scripts/sweep.ts#L8) 提供 `--dry-run`，让同一套选择逻辑可以只报告“将要做什么”。好的 agent tool 也应把 `plan` 与 `apply` 设计成同一语义的两个模式：
 
 ```ts
 await cleanup({ mode: "plan" })  // 返回候选、原因和影响
@@ -402,7 +402,7 @@ await cleanup({ mode: "apply", proposalId })
 | 子 Agent 摘要造成信息损失 | 子 Agent 返回关键文件，主 Agent 重读 | evidence index + primary-agent verification |
 | AI 判断直接触发副作用 | 先公开候选，等待并接受人工否决 | propose/wait/revalidate/apply |
 | 自动化使用过期事实 | 执行前重新检查评论、reaction、label 时间 | optimistic concurrency / precondition check |
-| 控制器异常导致死循环 | 循环状态损坏时清理并允许退出 | 按控制目标选择 fail-open/fail-closed |
+| 控制器异常导致死循环 | 部分显式异常会清理；set -e 提前退出另有缺口 | 按控制目标选择 fail-open/fail-closed，并覆盖真实错误路径 |
 | 策略与提示漂移 | 生命周期配置集中管理 | machine policy 与解释文案同源 |
 
 ## 7. 推荐的通用 Harness 骨架
@@ -460,14 +460,14 @@ Planner / Proposers ─► Candidate Artifacts
 
 ### 9.1 本仓库可直接验证
 
-- [code-review 编排命令](https://github.com/anthropics/claude-code/blob/0fa8c19d50f70f9f383fb6ff5ce5209575267d21/plugins/code-review/commands/code-review.md)
-- [PR reviewer 的置信阈值](https://github.com/anthropics/claude-code/blob/0fa8c19d50f70f9f383fb6ff5ce5209575267d21/plugins/pr-review-toolkit/agents/code-reviewer.md)
-- [Ralph Stop Hook](https://github.com/anthropics/claude-code/blob/0fa8c19d50f70f9f383fb6ff5ce5209575267d21/plugins/ralph-wiggum/hooks/stop-hook.sh)
-- [Ralph 状态初始化](https://github.com/anthropics/claude-code/blob/0fa8c19d50f70f9f383fb6ff5ce5209575267d21/plugins/ralph-wiggum/scripts/setup-ralph-loop.sh)
-- [feature-dev 分阶段工作流](https://github.com/anthropics/claude-code/blob/0fa8c19d50f70f9f383fb6ff5ce5209575267d21/plugins/feature-dev/commands/feature-dev.md)
-- [duplicate 延迟关闭脚本](https://github.com/anthropics/claude-code/blob/0fa8c19d50f70f9f383fb6ff5ce5209575267d21/scripts/auto-close-duplicates.ts)
-- [issue 生命周期清理脚本](https://github.com/anthropics/claude-code/blob/0fa8c19d50f70f9f383fb6ff5ce5209575267d21/scripts/sweep.ts)
-- [生命周期单一配置源](https://github.com/anthropics/claude-code/blob/0fa8c19d50f70f9f383fb6ff5ce5209575267d21/scripts/issue-lifecycle.ts)
+- [code-review 编排命令](https://github.com/anthropics/claude-code/blob/d7dbd9a09f59775726ed14bbea8fc9dfdff62f7b/plugins/code-review/commands/code-review.md)
+- [PR reviewer 的置信阈值](https://github.com/anthropics/claude-code/blob/d7dbd9a09f59775726ed14bbea8fc9dfdff62f7b/plugins/pr-review-toolkit/agents/code-reviewer.md)
+- [Ralph Stop Hook](https://github.com/anthropics/claude-code/blob/d7dbd9a09f59775726ed14bbea8fc9dfdff62f7b/plugins/ralph-wiggum/hooks/stop-hook.sh)
+- [Ralph 状态初始化](https://github.com/anthropics/claude-code/blob/d7dbd9a09f59775726ed14bbea8fc9dfdff62f7b/plugins/ralph-wiggum/scripts/setup-ralph-loop.sh)
+- [feature-dev 分阶段工作流](https://github.com/anthropics/claude-code/blob/d7dbd9a09f59775726ed14bbea8fc9dfdff62f7b/plugins/feature-dev/commands/feature-dev.md)
+- [duplicate 延迟关闭脚本](https://github.com/anthropics/claude-code/blob/d7dbd9a09f59775726ed14bbea8fc9dfdff62f7b/scripts/auto-close-duplicates.ts)
+- [issue 生命周期清理脚本](https://github.com/anthropics/claude-code/blob/d7dbd9a09f59775726ed14bbea8fc9dfdff62f7b/scripts/sweep.ts)
+- [生命周期单一配置源](https://github.com/anthropics/claude-code/blob/d7dbd9a09f59775726ed14bbea8fc9dfdff62f7b/scripts/issue-lifecycle.ts)
 
 ### 9.2 不能从本仓库推出
 
@@ -489,3 +489,17 @@ Planner / Proposers ─► Candidate Artifacts
 8. duplicate 自动关闭中的三天等待、后续评论检查和点踩否决分别防什么风险？
 9. 为什么 `apply` 前必须重新验证 proposal 的前置条件？
 10. 如何用结构化 finding、proposal 和 effect receipt 支持恢复、去重与审计？
+
+## 11. 本次复核：已有控制器未改，安全插件另有一条审查链
+
+与旧基线 `0fa8c19` 相比，本篇引用的 code-review、Ralph、feature-dev 和 issue 脚本没有代码差异，原先从这些实现提炼的学习内容继续保留。提交链接更新到本次核验版本，不能把原有能力误写成这次新增。
+
+标题“有界自循环”描述应采用的设计；Ralph 初始化默认 `MAX_ITERATIONS=0` 仍然表示无限制。显式设上限才是有界使用，不应把标题理解成插件默认有界。
+
+此外，security-guidance 的 Stop 与 commit/push 审查值得单独研究：前者做 diff 分析，后者可进入 SDK 调查和反证；它们都属于事后反馈，不会撤销已经完成的提交或推送。阅读新增安全审查篇。
+
+## 12. 源码复核补充：提示词步骤与异常代码都可能自相矛盾
+
+code-review 第 5 步明确针对第 3/4 个 reviewer 的候选启动复核，不能把流程图画成所有 reviewer 的候选无条件进入同一验证环节。其第 6 步又要求过滤未验证问题，规则审查候选如何走过这两步存在提示词歧义；宿主没有强制状态机替它补齐。
+
+Ralph 的错误处理也不能只读注释：[plugins/ralph-wiggum/hooks/stop-hook.sh](D:/codes/claude-code/plugins/ralph-wiggum/hooks/stop-hook.sh#L90) 的命令替换失败受 set -e 影响；[plugins/ralph-wiggum/hooks/stop-hook.sh](D:/codes/claude-code/plugins/ralph-wiggum/hooks/stop-hook.sh#L119) 的 Perl 替换未要求标签先存在。这些是静态代码发现，本次未运行完整 Bash Hook。

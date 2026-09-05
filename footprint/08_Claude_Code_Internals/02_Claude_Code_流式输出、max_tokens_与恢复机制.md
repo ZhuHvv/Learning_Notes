@@ -1,6 +1,7 @@
 # 08.02 Claude Code 流式输出、max_tokens 与恢复机制
 
-> **源码审查更正（2026-08-15）**：流式事件和 `stop_reason` 属于 Messages API/Agent SDK 的公开协议；“Claude Code 先提高 `max_tokens` 重试、再追加内部续写消息”的步骤、阈值、次数和内部提示词并不由当前公开仓库或产品文档承诺。第 5、6、9 节的伪代码应改读为**一个可移植 harness 的恢复策略示例**，而不是当前 CLI 的已证实调用链。
+> 核验：2026-09-05；本地源码 `d7dbd9a`，发行记录至 `2.1.261`。流式事件属于 API（应用程序接口）契约；重试和续写伪代码属于 Harness（Agent 执行框架）设计示例。
+
 
 ## 1. 先区分两种长度限制
 
@@ -93,7 +94,7 @@ message_delta.delta.stop_reason == "max_tokens"
 
 `max_tokens` 与 `model_context_window_exceeded` 也必须分开：前者表示达到了请求设置的单次输出上限；后者表示输入加输出先耗尽了模型上下文空间。两者都可能产生截断内容，但调参方向不同。
 
-## 5. 恢复策略一：提高上限并重试原调用
+## 5. Harness 策略示例一：提高上限并重试原调用
 
 从特定 Claude Code 构建的第三方还原分析看，当首次遇到可恢复的 max-output 条件、且当前模型仍允许更高输出上限时，Claude Code 曾采用提高 `max_tokens` 后重新执行原调用的策略。该分支不是 Agent SDK 或 Claude Code 官方文档承诺的公共接口，应用开发者不应仅凭这份内部还原复制固定阈值或重试次数。
 
@@ -114,7 +115,7 @@ message_delta.delta.stop_reason == "max_tokens"
 
 为什么先重试？因为第一次触顶可能只是默认上限偏保守。若提高到模型允许的更大单次响应上限，一次调用就可能完整结束，避免拼接多段回复。
 
-## 6. 恢复策略二：保留断点并发起续写调用
+## 6. Harness 策略示例二：保留断点并发起续写调用
 
 同一版本还原还显示：若更高上限仍然得到 `max_tokens`，可以把截断结果作为历史中的 assistant 内容，再追加一条内部用户消息：
 
@@ -179,10 +180,10 @@ while response.stop_reason == "max_tokens" and continuations < limit:
 
 因此，出现 `max_tokens` 不一定意味着终端已经显示了极长文章。模型可能在 thinking 中消耗大部分预算，或正在生成大型工具参数时被截断。诊断时应查看 API usage、stop reason、内容块类型和工具调用状态。
 
-## 9. 一条完整恢复链路
+## 9. 自研 Harness 的恢复链路示例（不是 CLI 源码）
 
 ```text
-Claude Code 发起流式请求
+示例 Harness 发起流式请求
   ↓
 接收 content_block_delta，累计并展示内容
   ↓
@@ -200,7 +201,7 @@ Claude Code 发起流式请求
 收到 message_stop，完成本次流收尾
 ```
 
-这条图只描述单次模型流与输出恢复。完整 Query 生命周期还包括权限、工具执行、上下文压缩、取消、最大轮数和后台任务，详见 `006_Claude_Code_Agent_Loop、Query_生命周期与工具编排.md`。
+这条图只描述单次模型流与输出恢复。完整 Query 生命周期还包括权限、工具执行、上下文压缩、取消、最大轮数和后台任务，详见 [06_Claude_Code_Agent_Loop、Query_生命周期与工具编排.md](06_Claude_Code_Agent_Loop、Query_生命周期与工具编排.md)。
 
 ## 10. 博客 Query Loop 表述的事实边界
 
@@ -224,7 +225,7 @@ Query Loop 博客展示了 `ask → QueryEngine.submitMessage → query → quer
 - 追问：既然输出以 chunk 返回，客户端是否需要累计所有 chunk 长度判断超限。
 - 关键理解：模型服务端逐 token 计数；chunk 只是网络分片，Claude Code 根据最终 `message_delta.stop_reason` 做权威判断。
 - 协议深化：`message_delta` 是携带结束原因和 usage 的结构化状态事件，`message_stop` 才表示流正式结束。
-- 最终理解：第一次扩容是从原输入重新生成的重试；之后续写是把已生成部分变成历史，使用新的单次输出预算继续同一任务。
+- 最终理解：扩容重试和保留断点续写是两种策略；前者重新生成，后者增加历史。是否先扩容再续写需由具体实现决定，本文不承诺 Claude Code 的固定顺序。
 
 ## 12. 常见误区
 
@@ -239,14 +240,14 @@ Query Loop 博客展示了 `ask → QueryEngine.submitMessage → query → quer
 
 ## 13. 关联知识点
 
-- `001_Claude_Code_Prompt_前缀缓存与三级上下文.md`
-- `004_Claude_Code_上下文压缩、Microcompact_与状态恢复.md`
-- `006_Claude_Code_Agent_Loop、Query_生命周期与工具编排.md`
+- [01_Claude_Code_Prompt_前缀缓存与三级上下文.md](01_Claude_Code_Prompt_前缀缓存与三级上下文.md)
+- [04_Claude_Code_上下文压缩、Microcompact_与状态恢复.md](04_Claude_Code_上下文压缩、Microcompact_与状态恢复.md)
+- [06_Claude_Code_Agent_Loop、Query_生命周期与工具编排.md](06_Claude_Code_Agent_Loop、Query_生命周期与工具编排.md)
 - `../01_LLM_Transformer/07_Causal_Mask、自回归生成与_KV_Cache.md`
 - `../02_Agent_RAG_Memory/02_Agent_的端到端任务能力.md`
 - `../02_Agent_RAG_Memory/11_LangGraph_状态更新、invoke_与_stream.md`
-- `../04_Go/9_Go_SSE：text_event-stream_与流式响应.md`
-- `../07_Backend_Deploy_Network/7_HTTP_Streaming、SSE、WebSocket_与_gRPC_Streaming.md`
+- `../04_Go/17_Go_SSE：text_event-stream_与流式响应.md`
+- `../07_Backend_Deploy_Network/07_HTTP_Streaming、SSE、WebSocket_与_gRPC_Streaming.md`
 
 ## 14. 参考资料与事实边界
 
@@ -267,3 +268,15 @@ Query Loop 博客展示了 `ask → QueryEngine.submitMessage → query → quer
 4. 为什么续写不会突破模型的单次输出硬上限？
 5. 模型没有显示很长正文时，为什么仍可能出现 `max_tokens`？
 6. `max_tokens` 与 `model_context_window_exceeded` 分别说明哪一层预算先触顶？
+
+## 16. 工具输出字符上限是第三种预算
+
+[本地发行记录](D:/codes/claude-code/CHANGELOG.md#L6)：2.1.261 增加 `bashOutputMaxChars`、`taskOutputMaxChars`，控制命令或后台任务的多少输出以内联形式交给模型，最高 128K 字符，超出内容转存文件。
+
+| 限制 | 限制对象 | 不能混淆成 |
+|---|---|---|
+| `max_tokens` | 模型一次生成 | Shell 输出长度 |
+| 工具输出字符上限 | 工具结果内联载荷 | 模型 token 上限 |
+| 上下文容量 | 下一次模型请求 | 任务总工作量 |
+
+命令已成功而输出转存文件时，应读取所需区段；不能为了“拿全输出”无条件重跑有副作用的命令。2.1.246 还将 `maxTurns` 到限的子 Agent 返回标为 partial（部分结果）：拿到文本不等于任务完成。证据：[本地发行记录](D:/codes/claude-code/CHANGELOG.md#L522)。

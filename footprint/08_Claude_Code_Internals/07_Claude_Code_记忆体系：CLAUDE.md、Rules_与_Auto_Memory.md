@@ -1,6 +1,7 @@
 # 08.07 Claude Code 记忆体系：CLAUDE.md、Rules 与 Auto Memory
 
-> **源码审查更正（2026-08-15）**：本篇主要应以官方 Memory 文档而非本仓库源码为证据。当前可直接证实：`CLAUDE.md`/Rules 是上下文指令而非强制策略，auto memory 位于仓库派生的本机目录，启动时仅加载 `MEMORY.md` 的前 200 行或 25KB，主题文件按需读取，且同一 Git 仓库的 worktree 共享该记忆。任何关于隐藏分类器、向量数据库、排序模型或未公开写入策略的表述都只能是推断。
+> 核验：2026-09-05；本地源码 `d7dbd9a`，发行记录至 `2.1.261`。官方 Memory 页面已明确四类笔记；原文否认四类类型、鼓励缓存可从源码推导的架构信息的段落已更正。
+
 
 ## 1. 先给结论
 
@@ -150,7 +151,7 @@ paths:
 
 Claude Code 会提示 Claude 保持索引简洁：每项尽量一行，把细节移入主题文件，合并或删除过时条目。超限写入可以成功，但超出加载限制的部分在下次启动不会进入上下文。
 
-`200 行` 是 `MEMORY.md` 的启动加载硬边界，不应与官方对 `CLAUDE.md` 的“建议控制在 200 行以内”混淆：`CLAUDE.md` 会完整加载，200 行只是提高遵循度和减少 token 的写作建议。
+`200 行` 是 `MEMORY.md` 的启动加载硬边界，不应与官方对 `CLAUDE.md` 的“建议控制在 200 行以内”混淆：`CLAUDE.md` 的 200 行只是写作建议；当前文档另有 4 MiB 文件上限，超过会跳过，不能写成任意大小都完整加载。
 
 Auto memory 目录可通过 `autoMemoryDirectory` 改写。当前文档允许从不同 settings scope 提供该值；若来自项目或本地 settings，则必须先通过 workspace trust，不能沿用旧版“项目级设置永远不接受”的结论。
 
@@ -176,55 +177,17 @@ Auto memory 目录可通过 `autoMemoryDirectory` 改写。当前文档允许从
 
 但需要修正“索引始终在 system prompt 中”的表述。官方文档明确说明 `CLAUDE.md` 内容以 system prompt 之后的 user message 形式交付；Auto memory 的精确消息角色和内部包装不是稳定公共接口。对使用者而言，可靠结论只是“索引会加载进上下文”。
 
-## 7. 当前官方文档没有承诺“四类记忆 + Sonnet top-5”
+## 7. 四类笔记已公开，隐藏抽取流水线仍未证实
 
-博客基于特定构建还原，描述了一套：
+2026-09-05 核对的[官方 Memory 文档](https://code.claude.com/docs/en/memory#auto-memory)明确列出 `type`：`user`（用户背景）、`feedback`（反馈偏好）、`project`（不能从源码推导的项目事项）、`reference`（外部资料入口）。旧文“官方没有承诺固定四种 type”的断言应撤销。
 
-```text
-user / feedback / project / reference 四种类型
-每条记忆一个带 frontmatter 的文件
-后台 extractMemories Agent
-Sonnet 从候选中选择 top-5
-两天后注入 stale 警告
-```
+这不证明后台一定有 `extractMemories` Agent，也不证明用 Sonnet 选 top-5 或固定两天判过期。类型约定、持久文件布局、召回实现是三个不同问题。
 
-截至本次整理，当前官方 Claude Code Memory 文档并未把这些内容列为公共契约。相反，官方当前明确说明：
+## 8. 代码事实回读源码，记忆保存难以重新推导的上下文
 
-- Auto memory 可以保存 build commands、debugging insights、architecture notes、code style preferences、workflow habits；
-- `MEMORY.md` 是简洁索引，主题文件由 Claude 自行组织；
-- Claude 在会话中直接读取和写入记忆文件；
-- 带 frontmatter 的记忆文件在较新版本中可记录 `modified` 时间；
-- 官方没有承诺固定四种 `type`；
-- 官方没有承诺一定运行独立抽取 Agent；
-- 官方没有承诺固定使用 Sonnet；
-- 官方没有承诺每次只选 top-5；
-- 官方没有承诺“两天即 stale”的固定阈值。
+当前官方文档说明会跳过可从代码和 Git 历史得到的架构、路径和调试修复，也避免重复 `CLAUDE.md`。因此原文将“不保存代码与架构信息”判为过时不成立。
 
-因此博客描述可能代表某个实验分支、旧版或未公开构建，不能直接用于判断当前发行版。
-
-## 8. 博客中“不要保存代码与架构信息”的说法已不适合作为当前规则
-
-博客的版本还原称 Auto memory 不应保存：
-
-- 代码模式与架构；
-- 文件路径与项目结构；
-- 调试方案；
-- Git 历史；
-- 临时状态。
-
-其中“动态事实应优先从权威源验证”仍然成立：
-
-```text
-当前代码 → 读文件 / Grep / LSP
-当前提交 → git log / git blame
-当前任务 → 任务注册表
-```
-
-但当前官方文档明确把 debugging insights、architecture notes 和 build commands 列为 Auto memory 的典型内容。因此不能再写成“Claude Code 明确禁止保存架构和调试信息”。
-
-更稳妥的工程规则是：
-
-> 可以记住稳定、难以重新发现、未来有用的知识；对于易变的路径、行号、分支状态和临时任务进度，应在使用前从代码、Git 或任务系统重新验证。
+学习笔记可以解释架构；Auto memory 应更偏向用户反馈、项目约束和资料入口。这两种文档目的不同。自研 Harness 若选择缓存代码导航，应额外记录提交版本并在使用时校验，不能把该设计建议称为 Claude Code 的默认写入策略。
 
 ## 9. 记忆不是向量数据库的反面
 
@@ -389,3 +352,9 @@ Markdown 的优势是可见、可编辑，并不自动消除 prompt injection、
 4. 博客中的“四类记忆 + Sonnet top-5”为什么不能写成当前公共契约？
 5. 为什么“当前代码在哪里”应优先从文件和 Git 验证？
 6. Markdown 记忆与向量检索分别适合什么规模和场景？
+
+## 17. 从仓库代码区分记忆、策略与控制状态
+
+[plugins/security-guidance/hooks/session_state.py](D:/codes/claude-code/plugins/security-guidance/hooks/session_state.py#L37) 保存 `shown_warnings`、审查计数和基线等机器状态；[plugins/hookify/core/config_loader.py](D:/codes/claude-code/plugins/hookify/core/config_loader.py#L198) 读取 `.claude/hookify.*.local.md` 策略。它们虽都是磁盘文件，却分别承担控制状态和规则配置，均不是 Auto memory。
+
+判断一个持久文件的性质，先看写入者、读取入口、更新条件和失败分支。文件名包含 state/memory 并不能证明其是长期语义记忆；Markdown 也不代表内容一定只作为提示词。

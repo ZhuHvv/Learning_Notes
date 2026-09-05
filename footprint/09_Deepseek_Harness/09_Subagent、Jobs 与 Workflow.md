@@ -4,6 +4,16 @@
 
 dsh 把并发拆成三种不同对象：Subagent 是有独立 Agent/Session 与 provider transport 的委派，Jobs 是进程内、按 owner 隔离的后台工作注册表，Workflow 是 worker thread 中运行的模型编写 orchestration script 并通过 Subagent seam 扇出子任务；它们可组合但生命周期、持久性、结果回传和安全边界互不替代。
 
+## 源码阅读路线
+
+按以下顺序打开源码；链接固定到本次核对时的实际行号。
+
+1. [委派工具和路由选择](<D:/codes/deepseek-harness/packages/subagent/tool-subagent/src/index.ts#L306>)：packages/subagent/tool-subagent/src/index.ts。
+2. [相邻父子消息 consumer](<D:/codes/deepseek-harness/packages/subagent/tool-subagent-control/src/index.ts#L29>)：packages/subagent/tool-subagent-control/src/index.ts。
+3. [驻留、冷恢复与投递](<D:/codes/deepseek-harness/packages/subagent/subagent/src/continuation.ts#L583>)：packages/subagent/subagent/src/continuation.ts。
+4. [进程内后台记录](<D:/codes/deepseek-harness/packages/jobs/jobs-local/src/index.ts#L76>)：packages/jobs/jobs-local/src/index.ts。
+5. [Host 侧子任务编排](<D:/codes/deepseek-harness/packages/workflow/workflow-worker-thread/src/host.ts#L1>)：packages/workflow/workflow-worker-thread/src/host.ts。
+
 ## 2. 源码调用链与数据流
 
 ### 2.1 Subagent provider seam
@@ -24,27 +34,26 @@ tool-subagent(provider="spawn" | "fork" | ...)
 
 ### 2.2 One-shot 与 continuable
 
-One-shot `start()` 在 provider 发布真实 run 后才转移所有权。caller 必须无论成功失败都 `run.dispose()`；`run.result` 的普通 child failure 以非 `completed` stop reason 返回，只有 seam 无法表示的 infrastructure fault 才 reject。foreground tool 等结果并回收；one-shot background tool 把 run 适配成 generic Job。
+One-shot `start()` 发布真实 run 后转移所有权，caller 需要在结束路径 `dispose()`。foreground 工具等待 result；one-shot background 可适配成 generic Job。普通 child failure 由 stop reason 表达，无法在 seam 表达的基础设施错误才 reject。
 
-Continuable child 的一次 durable Session 可跨多个 FIFO turn：
+Continuable child 的 Session 可接收多次消息，resident activation 与 durable descriptor 分开管理：
 
 ```text
-startContinuable()
-  → prepareContinuable()
-  → reserve child identity + compose scope + create Agent
-  → child inbox 接受 initial prompt
-  → 返回 childId/messageId，不等待 child 完成
-
-send_message
-  → exact live direct parent authority
-  → resident: inbox followup
-  → absent: 从 persistence cold resume
-  → 接受后成为未来 FIFO turn，不 steer 当前 turn
+startContinuable → prepare identity / scope / Agent → 接收初始输入 → 返回 childId/messageId
+send_message → subagents.sendMessage(sender, targetId, content)
+             → 校验相邻父子关系与 exact live sender
+             → 直接 child：驻留投递或 cold resume
+             → 直接 parent：要求 sender 是 resident continuable child
+             → working target 接最近 step，idle target 开 turn
 ```
 
-continuation manager 只允许一个 process-local Activation，依据 Agent quiescence 与 owned children 推导 running/waiting/settled。`interrupt_agent` 只取消目标当前 turn，保留 queued inbox 与 descendants；`list_agents` 从 durable descriptor、session tree 与 live registry 组合出 running/idle/ready。
+模型侧 `send_message` 采用 steer（引导到最近一步）语义，不能写成仅排下一 FIFO turn。Service 中独立的 followup/host prompt 路径仍可表达不同投递意图；要以所用方法为准。
 
-child-to-parent 的 `report` 是仅安装在 continuable child scope 的独立工具。默认 `wakeup` 通过 parent.followup() 开新父 turn；`quiet` 只 inject context。report 是 child 自愿机制，可能零次或多次；无论 report 与否，Activation settle 前 manager 都会发一条 service-owned settlement notice，避免 token limit、cancel、failure 等无法主动报告的结局无声丢失。
+父子消息统一由 `send_message` 承担，当前没有独立 tool-subagent-report 包。工具返回送达确认，不返回对方回答。它不授予任意 sibling 通信；相邻关系与驻留身份仍是权限条件。
+
+manager 在 activation 结算时发送 service-owned settlement notice：idle 父代理 followup，busy 父代理 steer；父正在 teardown 时只能按其关闭语义处理。notice 不依赖 child 主动汇报，仍不能据此承诺跨进程 exactly-once 送达。
+
+`interrupt_agent` 接受祖先对后代的中断请求，只停止当前 turn，不删除 queued messages，不递归停止 descendants。返回 accepted 说明请求被接受，不说明目标已同步退出。
 
 ### 2.3 委派权限
 
@@ -92,29 +101,29 @@ Host/worker value boundary 只接受 plain lossless JSON，拒绝函数、cycle�
 
 ### 2.6 默认 composition
 
-`dsh-base` 挂载 jobs-local、tool-jobs、Subagent registry、spawn/fork in-process provider、control/report tools、workflow-worker-thread 与 workflow tool。base 中默认 `subagent` 工具绑定 spawn + continuable background，`subagent_fork` 绑定 fork + one-shot；Web 会把模型侧 consumer rows 移入选中 preset，而随附 standard/code/cordis preset 把两者都配置成 continuable background。因此“fork 是否 one-shot”也必须按有效 surface/preset composition 回答。随附 preset 还保留了 Codex 与 Claude Code 工具的模板行，但它们带 `disabled: true`，复制 preset 后显式启用才会暴露；ACP 等外部 provider 同样需要 overlay/preset 组装，不能从 package 或禁用行存在推断默认可用。
+`dsh-base` 挂载 jobs-local、tool-jobs、Subagent registry、spawn/fork in-process provider、相邻父子 control tools、workflow-worker-thread 与 workflow tool。base 中默认 `subagent` 工具绑定 spawn + continuable background，`subagent_fork` 绑定 fork + one-shot；Web 会把模型侧 consumer rows 移入选中 preset，而随附 standard/ptc/cordis preset 把两者都配置成 continuable background。因此“fork 是否 one-shot”也必须按有效 surface/preset composition 回答。随附 preset 还保留了 Codex 与 Claude Code 工具的模板行，但它们带 `disabled: true`，复制 preset 后显式启用才会暴露；ACP 等外部 provider 同样需要 overlay/preset 组装，不能从 package 或禁用行存在推断默认可用。
 
 ## 3. 设计取舍
 
-- Session-backed child 而非把所有输出拷回父 transcript：并发工作有独立可恢复历史，父只接收选定 report/settlement。
+- Session-backed child 而非把所有输出拷回父 transcript：并发工作有独立可恢复历史，父接收相邻消息与 settlement。
 - one-shot 与 continuable 分开：前者是 holder-owned result，后者是 durable addressable conversation，避免一个模糊对象同时承担两套生命周期。
 - Jobs 做通用后台控制：Shell、PTY、Subagent producer 共享 id、output、kill、notice，不重复实现轮询协议。
 - Workflow script 在 worker，child 在 Host：脚本可并发编排且 host loop 不被同步阻塞，同时所有 Agent 创建仍走同一 Subagent contract。
-- settlement notice 独立于 report：机制层保证父至少知道 child 如何结束，语义结果仍由 child 自主报告或单独查看 transcript。
+- settlement notice 独立于 child 主动消息：服务负责报告结局，详细结果可由 child 发送或读取其 Session。
 
 ## 4. 不能推出的结论
 
 - `fork` 继承已完成历史，不等于继承父当前未完成 turn、所有内存状态或权限。
-- continuable `send_message` 接受不等于 child 已执行，更不返回 child answer。
-- `report accepted` 不等于端到端 durable exactly-once receipt；进程故障与 post-execute veto 仍可造成歧义。
+- continuable `send_message` 送达不等于目标已经处理，更不返回目标 answer。
+- 相邻消息送达确认不是跨进程持久邮箱协议；崩溃恢复和重复投递保证应看具体服务，不能由确认文本扩大推断。
 - Jobs 不持久化，不能用 job id 在重启后恢复后台进程。
 - Workflow worker/vm 不是 hostile-code sandbox，清空 env 也不能证明脚本无法恢复 Node authority。
 - child 或 Ralph/Goal 自报 complete 不是独立 evaluator 的验证结论。
 
 ## 5. 常见误区
 
-- 用 background one-shot job 与 continuable child 混用 collection 方式：前者 `job_output`，后者读 child Session、等 report/settlement 或发 followup。
-- 对正在工作的 child 调 `send_message` 期待 steer 当前 turn；它排到下一 FIFO turn。
+- 用 background one-shot job 与 continuable child 混用 collection 方式：前者 `job_output`，后者读 child Session、等消息/settlement 或发 send_message。
+- 把 send_message 当成只在下一 turn 生效；它会 steer 正在工作的相邻目标到最近 step。
 - 看到 child id 就尝试跨 sibling 控制；authority 由 exact parent/ancestor 与 durable lineage 检查。
 - 忘记 foreground Subagent/Workflow 的 `dispose()`，导致 child 或 worker 未达到 quiescence。
 - 把 workflow 中间 child output 全部返回给父模型；只有 script final JSON 进入 parent tool result。
@@ -123,24 +132,32 @@ Host/worker value boundary 只接受 plain lossless JSON，拒绝函数、cycle�
 
 1. 跟踪 one-shot `start()` 的 publication ownership boundary，列出 publish 前后失败分别由谁清理。
 2. 从 `startContinuable()` 到 `followup()` 和 cold resume，画出 Session、Activation、Agent inbox 三者关系。
-3. 对比 `report`、settlement notice 与 one-shot result 的发送者、调度 lane、持久位置和失败语义。
+3. 对比 send_message、settlement notice 与 one-shot result 的发送者、调度时机、持久位置和失败语义。
 4. 从 bash background start 跟到 jobs-local、tool-jobs notice，验证 owner fence 与 consuming cursor。
 5. 阅读 workflow worker protocol，找出哪些值经过 plain JSON boundary，哪些 Agent 操作仍留在 Host。
 
+## 模型选择、外部 provider 与 Teams
+
+standard/ptc/cordis 的 spawn 工具启用 `modelSelectionSettings`；`tool-subagent` 的 model-selection 模块解析受配置限制的 provider/model 选择，并有 list-models consumer。fork 工具省略该选择，以继承父路由和历史。不要把“可选模型”理解成任意字符串都能绕过 provider capability 与模型目录校验。
+
+外部 Codex/Claude Code provider 有自己的 bundle patch。Host 安装 provider 和 preset 显式启用模型工具是两个步骤；随附 preset 的 disabled 模板不等于默认可用。其 depth、结构化输出、子进程终止与 transcript 映射应继续读各 provider 的 run.ts，而不能套用 in-process child 的全部保证。
+
+实验性 Agent Teams 在普通 continuable subagent 之上提供共享任务板和 durable mailbox，允许成员间通信；普通 send_message 的相邻父子权限不能自动推广为 Team 广播权限。详见新增 Teams 专题。
+
 ## 7. 证据索引
 
-- `packages/subagent/subagent/src/index.ts`
-- `packages/subagent/subagent/src/continuation.ts`
-- `packages/subagent/subagent/src/descriptor.ts`
-- `packages/subagent/subagent-in-process-driver/src/index.ts`
-- `packages/subagent/tool-subagent/src/index.ts`
-- `packages/subagent/tool-subagent-control/src/index.ts`
-- `packages/subagent/tool-subagent-report/src/index.ts`
-- `packages/jobs/jobs/src/index.ts`
-- `packages/jobs/jobs-local/src/index.ts`
-- `packages/jobs/tool-jobs/src/index.ts`
-- `packages/workflow/workflow/src/index.ts`
-- `packages/workflow/workflow-worker-thread/src/host.ts`
-- `packages/workflow/workflow-worker-thread/src/worker.ts`
-- `packages/workflow/tool-workflow/src/index.ts`
-- `packages/bundle/base/cordis.patch.yml`
+- [packages/subagent/subagent/src/index.ts](<D:/codes/deepseek-harness/packages/subagent/subagent/src/index.ts#L1>)
+- [packages/subagent/subagent/src/continuation.ts](<D:/codes/deepseek-harness/packages/subagent/subagent/src/continuation.ts#L1>)
+- [packages/subagent/subagent/src/descriptor.ts](<D:/codes/deepseek-harness/packages/subagent/subagent/src/descriptor.ts#L1>)
+- [packages/subagent/subagent-in-process-driver/src/index.ts](<D:/codes/deepseek-harness/packages/subagent/subagent-in-process-driver/src/index.ts#L1>)
+- [packages/subagent/tool-subagent/src/index.ts](<D:/codes/deepseek-harness/packages/subagent/tool-subagent/src/index.ts#L1>)
+- [packages/subagent/tool-subagent-control/src/index.ts](<D:/codes/deepseek-harness/packages/subagent/tool-subagent-control/src/index.ts#L1>)
+- [packages/subagent/subagent/src/internal.ts](<D:/codes/deepseek-harness/packages/subagent/subagent/src/internal.ts#L1>)
+- [packages/jobs/jobs/src/index.ts](<D:/codes/deepseek-harness/packages/jobs/jobs/src/index.ts#L1>)
+- [packages/jobs/jobs-local/src/index.ts](<D:/codes/deepseek-harness/packages/jobs/jobs-local/src/index.ts#L1>)
+- [packages/jobs/tool-jobs/src/index.ts](<D:/codes/deepseek-harness/packages/jobs/tool-jobs/src/index.ts#L1>)
+- [packages/workflow/workflow/src/index.ts](<D:/codes/deepseek-harness/packages/workflow/workflow/src/index.ts#L1>)
+- [packages/workflow/workflow-worker-thread/src/host.ts](<D:/codes/deepseek-harness/packages/workflow/workflow-worker-thread/src/host.ts#L1>)
+- [packages/workflow/workflow-worker-thread/src/worker.ts](<D:/codes/deepseek-harness/packages/workflow/workflow-worker-thread/src/worker.ts#L1>)
+- [packages/workflow/tool-workflow/src/index.ts](<D:/codes/deepseek-harness/packages/workflow/tool-workflow/src/index.ts#L1>)
+- [packages/bundle/base/cordis.patch.yml](<D:/codes/deepseek-harness/packages/bundle/base/cordis.patch.yml#L1>)
