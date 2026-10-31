@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>gRPC 实现梳理 · 从对象到双端收发</title>
+<style>
+:root{color-scheme:light;--bg:#f3f6fb;--paper:#fff;--ink:#17243b;--muted:#526179;--line:#dbe3ee;--accent:#125b9b;--soft:#eaf3ff}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.8 system-ui,'Microsoft YaHei',sans-serif}main{max-width:1240px;margin:auto;padding:44px 28px 72px}header{padding-bottom:26px;border-bottom:1px solid var(--line)}.eyebrow{font-size:13px;font-weight:700;letter-spacing:.1em;color:var(--accent)}h1{font-size:clamp(27px,4vw,42px);line-height:1.3;margin:12px 0 20px}h2{font-size:25px;margin:0 0 18px}h3{font-size:18px;margin:22px 0 10px}p{margin:10px 0}.lead{font-size:20px}.scope,.small{font-size:14px;color:var(--muted)}section{background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:28px;margin:26px 0}a{color:var(--accent);text-underline-offset:3px}nav{display:flex;gap:10px;flex-wrap:wrap;margin-top:24px}nav a{display:inline-block;background:white;border:1px solid var(--line);border-radius:9px;padding:9px 15px;text-decoration:none}.note{background:var(--soft);border-left:4px solid var(--accent);padding:14px 18px;border-radius:5px;margin:18px 0}.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}.tile{border:1px solid var(--line);border-radius:12px;padding:20px}.tile p{font-size:14px;color:var(--muted)}.table-wrap{overflow:auto}table{width:100%;border-collapse:collapse;font-size:15px}th,td{padding:13px 12px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}th{background:var(--soft)}code{font-family:Consolas,monospace;font-size:.91em;overflow-wrap:anywhere}pre{overflow:auto;background:#142138;color:#e7effb;border-radius:10px;padding:22px;font:14px/1.8 Consolas,'Microsoft YaHei',monospace;white-space:pre-wrap;overflow-wrap:anywhere}.step{display:grid;grid-template-columns:44px 1fr;gap:16px;padding:18px 0;border-bottom:1px solid var(--line)}.step:last-child{border:0}.num{height:38px;width:38px;display:grid;place-items:center;background:var(--soft);border-radius:50%;font-weight:700;color:var(--accent)}.step h3{margin:0 0 7px}details{border-top:1px solid var(--line);padding:14px 0}summary{cursor:pointer;font-weight:650}.tabs{display:flex;gap:8px;flex-wrap:wrap;margin:15px 0}button{font:inherit;cursor:pointer;border:1px solid var(--line);background:white;color:var(--ink);border-radius:8px;padding:8px 14px}button[aria-selected=true]{background:var(--accent);color:white;border-color:var(--accent)}iframe{display:block;width:100%;height:980px;border:1px solid var(--line);border-radius:10px;background:white}.framebar{display:flex;gap:15px;justify-content:space-between;align-items:center;flex-wrap:wrap;margin:12px 0}footer{color:var(--muted);font-size:13px;margin-top:30px}strong{font-weight:750}@media(max-width:760px){main{padding:24px 14px}section{padding:20px 15px}.grid{grid-template-columns:1fr}iframe{height:760px}.step{grid-template-columns:36px 1fr;gap:10px}}@media print{nav,.tabs,.framebar,iframe{display:none}section{break-inside:avoid;border:0}body{background:white}a{color:inherit}}
+</style></head><body><main>
+<header><div class="eyebrow">gRPC 学习记录 · 实现部分 · 2026-10-30</div>
+<h1>先分清对象，再沿一条 RPC 看收发</h1>
+<p class="lead"><strong>一次 RPC 有独立调用状态与流缓冲；多次 RPC 共享连接。连接 reader 读帧并分发，连接 writer 调度并写帧，调用处理协程完成消息解码和业务执行。</strong></p>
+<p class="scope">核验：grpc-go v1.85.0，提交 <code>c9ab42cdb0a2b3e7b9d5510ebbc999638ee41eb7</code>。原生 grpc.Server.Serve，默认服务端调度。主图展开一条已有连接上的单次成功 Unary 调用；重试、TLS 握手、服务发现和建连状态机只在说明中定位。源码核验与图形检查不等于真实服务运行测试。</p>
+<nav aria-label="内容导航"><a href="#terms">1 对象与执行者</a><a href="#diagrams">2 三张图</a><a href="#walk">3 调用闭环</a><a href="#waiting">4 阻塞与唤醒</a><a href="#boundaries">5 边界说明</a><a href="#evidence">6 源码索引</a></nav></header>
+
+<section id="terms"><h2>先把四个维度分开</h2>
+<p>前面的讨论连续切换对象、协程、数据格式和调用阶段，容易把它们当成一条层级链。它们其实是四个不同维度：</p>
+<div class="table-wrap"><table><thead><tr><th>维度</th><th>包含什么</th><th>判断问题</th></tr></thead><tbody>
+<tr><td>对象与生命周期</td><td>Stub、ClientConn、transport、RPC 状态、Stream、缓冲</td><td>这份状态由谁持有，复用多久？</td></tr>
+<tr><td>执行者</td><td>G-call、连接 reader / writer、服务端 G-rpc</td><td>现在是谁在运行代码？</td></tr>
+<tr><td>数据形式</td><td>对象 → Protobuf 字节 → gRPC 消息 → HTTP/2 帧 → TCP 字节</td><td>当前操作对象、消息还是字节块？</td></tr>
+<tr><td>阶段与状态</td><td>建流、入队、写出、收到、解码、最终状态</td><td>这一步完成究竟保证什么？</td></tr>
+</tbody></table></div>
+<h3>对象的粒度</h3><div class="table-wrap"><table><thead><tr><th>对象</th><th>生命周期 / 粒度</th><th>职责与边界</th></tr></thead><tbody>
+<tr><td>生成的 Stub</td><td>通常长期复用</td><td>强类型方法包装，持有 ClientConnInterface。不是连接或协程。</td></tr>
+<tr><td>ClientConn / gRPC Channel</td><td>目标服务的长期逻辑通道</td><td>解析、选择、管理连接。可以关联零条、一条或多条实际连接。</td></tr>
+<tr><td>http2Client / http2Server</td><td>连接级 transport</td><td>HTTP/2 状态、活动流表、controlBuf、主要读写循环。</td></tr>
+<tr><td>clientStreamWrapper / clientStream</td><td>一次逻辑 RPC</td><td>上下文、调用选项、发送接收、重试相关状态。</td></tr>
+<tr><td>csAttempt</td><td>一次尝试</td><td>关联选中的 transport 和底层流。重试更换尝试及底层流。</td></tr>
+<tr><td>transport.ClientStream / ServerStream</td><td>某连接上某个 Stream ID</td><td>双方各有独立对象，通过 Stream ID 对应，不跨进程共享对象。</td></tr>
+<tr><td>recvBuffer</td><td>每个传输流</td><td>字节块和终止事件。内部 Go chan + backlog，不是 Protobuf 消息队列。</td></tr>
+<tr><td>controlBuf</td><td>每条连接</td><td>writer 消费的数据及控制任务；writer 另有各流待发送项。</td></tr>
+</tbody></table></div>
+<div class="note"><strong>三个不同的“通道/流”：</strong>Go chan 是进程内同步结构；gRPC Channel 是访问远端的逻辑通道；HTTP/2 Stream 是连接中的逻辑传输流。</div></section>
+
+<section id="diagrams"><h2>按这个顺序看三张图</h2><div class="grid">
+<div class="tile"><strong>01 · 对象关系</strong><p>先看引用、管理与生命周期，不混入执行顺序。</p><a href="01-objects.html" target="_blank">打开完整对象图 ↗</a></div>
+<div class="tile"><strong>02 · 双端收发</strong><p>把请求送到 B，再把响应送回 A，观察队列与协程交接。</p><a href="02-runtime.html" target="_blank">打开完整架构图 ↗</a></div>
+<div class="tile"><strong>03 · 单次时序</strong><p>看提前调度、请求完整性、响应解码与最终状态。</p><a href="03-sequence.html" target="_blank">打开完整时序图 ↗</a></div>
+</div><div class="tabs" role="tablist" aria-label="选择图示"><button role="tab" aria-selected="true" data-src="01-objects.html">01 对象</button><button role="tab" aria-selected="false" data-src="02-runtime.html">02 架构</button><button role="tab" aria-selected="false" data-src="03-sequence.html">03 时序</button></div>
+<div class="framebar"><span class="small">节点绑定源码；需要更大空间可独立打开。</span><a id="open-diagram" href="01-objects.html" target="_blank">独立打开当前图 ↗</a></div>
+<iframe id="diagram" title="gRPC 实现架构交互图" src="01-objects.html"></iframe>
+<p class="small">架构编号用于阅读，不是严格的全局时钟；时序图只表达一种合法先后关系，不表示实测耗时。跨进程请求和响应箭头是同一连接的两个方向。</p></section>
+
+<section id="walk"><h2>沿一次 GetUser 调用走完闭环</h2>
+<p>GetUser 是教学接口名。真实生成代码证据来自仓库的 Greeter.SayHello 示例；此处没有声称仓库里存在 GetUser 业务实现。</p>
+<div class="step"><span class="num">0</span><div><h3>初始化供后续调用复用</h3><p>B 注册服务名、方法描述与业务对象，再监听端口。A 创建 ClientConn 和 Stub。NewClient 本身不做网络 I/O；首次使用可触发建连。主图从连接可用开始，两端已有各自 transport 与主要 I/O 协程。</p></div></div>
+<div class="step"><span class="num">1</span><div><h3>G-call 执行 Stub → Invoke → 建流</h3><p>Stub 提供完整方法路径及输入输出对象。Invoke 经过客户端 Unary 拦截器，创建 RPC 状态；picker 选择 transport，为本次尝试创建底层流并提交请求 HEADERS。创建 Stream 不意味着新建 TCP 连接。</p></div></div>
+<div class="step"><span class="num">2</span><div><h3>G-call 编码请求，提交发送任务</h3><p>SendMsg 在调用方协程完成编码、可选压缩与 gRPC 消息封装。transport.write 检查本地 writeQuota，把带 Stream ID 的内部任务放入 controlBuf。内部 dataFrame 项可能还要拆成多个真正的 DATA 帧。</p><p>Unary 唯一请求结束客户端发送方向，但保留接收方向。SendMsg 成功不等于字节已到对端。</p></div></div>
+<div class="step"><span class="num">3</span><div><h3>客户端 writer 组织并写出 HTTP/2 帧</h3><p>G-cw 取任务，维护各流待发列表，检查流与连接级窗口，切分并交错发送。HEADERS 携带方法与 Metadata，DATA 携带 gRPC 消息。字节经 TCP 发送；配置 TLS 时还经过加密层。</p></div></div>
+<div class="step"><span class="num">4</span><div><h3>服务端 reader 建流、调度和投递</h3><p>HandleStreams 读取帧；operateHeaders 创建 ServerStream，保存路径、Metadata、deadline，放入 activeStreams 并默认调度 G-rpc。请求体此时可能未到齐。后续 DATA 按 Stream ID 入该流 recvBuffer。reader 不做 Protobuf 解码，也不执行 GetUser。</p></div></div>
+<div class="step"><span class="num">5</span><div><h3>G-rpc 路由、读齐请求，进入业务</h3><p>handleStream 拆出服务名和方法名，在注册表中找到描述，经 processRPC / wrapUnaryHandler 进入生成 handler。生成 handler 创建请求对象，调用解码函数；RecvMsg 从本流缓冲读齐消息头和 N 字节正文，解压、反序列化。</p><p>本版本 Unary 还确认请求方向 EOF、没有第二条请求，之后进入 Unary 拦截器和业务方法。调度开始不等于业务已经开始。</p></div></div>
+<div class="step"><span class="num">6</span><div><h3>响应消息与最终状态分别入队</h3><p>正常返回对象经服务端 SendMsg 编码入队；processRPC 再 WriteStatus。G-sw 按流顺序发出响应 HEADERS、DATA 和含 grpc-status 的 Trailers。业务错误可以不带响应消息，直接返回非 OK 状态。</p></div></div>
+<div class="step"><span class="num">7</span><div><h3>客户端 reader 分开处理数据和状态</h3><p>G-cr 用 activeStreams[StreamID] 找流。DATA 投入 recvBuffer；响应 HEADERS 设置 Metadata / 压缩信息并通知 headerChan；Trailers 先保存 status / trailer，再向流缓冲投入 EOF 并完成终止通知。不能把每个帧都当成业务消息。</p></div></div>
+<div class="step"><span class="num">8</span><div><h3>原 G-call 解码并确认结果</h3><p>G-call 沿 Invoke 进入 RecvMsg，按需等待本流头部或数据。取齐完整消息后解压、Unmarshal，填入 reply。clientStreamWrapper 对 Unary 再读一次，只有恰好一条响应且最终状态 OK 才成功；第二条响应或最终非 OK 均报错。</p><p>GetUser 返回后原业务协程继续执行。不是 reader 直接执行调用方后续代码。</p></div></div>
+</section>
+
+<section id="waiting"><h2>谁在等待，谁让它继续</h2><div class="table-wrap"><table><thead><tr><th>位置</th><th>等待者</th><th>等待内容</th><th>推进或终止</th></tr></thead><tbody>
+<tr><td>选连接 / 建流</td><td>G-call</td><td>解析结果、可用 transport、流额度</td><td>资源就绪或错误 / deadline / 取消；行为受配置影响。</td></tr>
+<tr><td>SendMsg 提交</td><td>G-call / G-rpc</td><td>本流本地 writeQuota</td><td>writer 消耗待发数据并补额度，或流关闭。</td></tr>
+<tr><td>HTTP/2 写出</td><td>writer 管理待发流</td><td>流 / 连接窗口及网络可写性</td><td>流窗口不足时，其他有额度的流可继续；连接窗口不足时，全部流的 DATA 等待。底层写阻塞时，其他流也不能绕过该连接写出。</td></tr>
+<tr><td>完整消息接收</td><td>G-call / G-rpc</td><td>本流 recvBuffer 的更多字节</td><td>reader 投递数据 / 终止事件；context 取消进入关闭路径。</td></tr>
+<tr><td>最终结局</td><td>客户端 G-call</td><td>响应结束与 grpc-status</td><td>Trailers 或流 / 连接错误；一个 DATA 不代表完成。</td></tr>
+<tr><td>业务依赖</td><td>服务端 G-rpc</td><td>数据库等业务操作</td><td>依赖完成或配合取消；框架不强杀任意业务代码。</td></tr>
+</tbody></table></div>
+<div class="note"><strong>等待不是忙轮询，也不代表独占操作系统线程。</strong>Go 的 channel / 网络等待可挂起 goroutine，再由运行时调度继续。reader 不查询数据库，但仍可能等待网络、流控或框架资源，不能说它永远不阻塞。</div></section>
+
+<section id="boundaries"><h2>容易混淆的边界</h2>
+<details open><summary>连接、Stream、goroutine 不能画等号</summary><p>连接承载多条流，每流有独立状态及缓冲。多个 RPC 共享主要 I/O 协程；同一个 G-call 依次经过 Stub、Invoke、SendMsg、RecvMsg。服务端默认每 RPC 调度处理 goroutine。主要 I/O 是一读一写，但整个生命周期不只有两个 goroutine。</p></details>
+<details open><summary>reader 解析帧；RecvMsg 解析消息</summary><p>消息可以跨多个 DATA 帧；DATA 帧也可包含多条消息的数据。reader 按 Stream ID 分发；消息长度、解压、业务字段解码由消费本流的调用链处理。</p><pre>对象 → Protobuf 字节 → [1 字节压缩标志 | 4 字节长度 | N 字节正文]
+     → HTTP/2 DATA 帧 → TCP 字节流
+接收端逆向解析；这些边界不是一一对应。</pre></details>
+<details><summary>入队成功、收到消息、RPC 成功不同</summary><p>SendMsg 成功只说明当前提交成功。解码一条响应后仍看最终状态。数据库成功但响应丢失时，客户端仍可能超时。重试要靠业务幂等或结果核对；Stream ID 不能替代业务请求 ID。</p></details>
+<details><summary>调度可以提前；Unary 业务需要完整请求</summary><p>HEADERS 足以创建流、查表、调度处理。G-rpc 随后在 RecvMsg 等请求数据；本版本还确认请求发送方向结束，再调用生成 handler 后续的拦截器与业务方法。</p></details>
+<details><summary>取消与断线如何作用</summary><p>客户端取消可关闭本流并发 RST_STREAM。服务端处理该帧或连接关闭时取消对应流 context；读写等待经关闭与错误路径解除。业务代码与驱动仍须配合取消，已提交事务不会自动回滚。连接断开可能影响其全部活动流。</p></details>
+<details><summary>三种发送限制</summary><p>writeQuota 约束本流本地待发积压；HTTP/2 流窗口约束本流 DATA；连接窗口约束连接 DATA 总量。grpc-go 的接收流窗口和连接窗口做了解耦，避免慢流无必要地饿死其他流。应用持续 Recv 后塞无界队列，仍可能耗尽内存。</p></details>
+<details><summary>流式与 Unary 共享机制，完成条件不同</summary><p>流式 RPC 可在一次调用中多次 Send / Recv；一个流可一发一收并行，同方向操作需串行。Unary 的消息数及结束检查由包装逻辑完成，流式不能每收一条消息就要求调用结束。</p></details>
+<details><summary>未覆盖与不应推导的结论</summary><p>这不是所有语言通用的 goroutine 结构，也未混入 ServeHTTP 的另一套 HTTP/2 实现。没有测量吞吐或延迟，没有展开完整重试状态机。重试换 attempt 与底层流，已建立流不会迁移。TCP 跨流队头阻塞仍存在。</p></details>
+</section>
+
+<section id="evidence"><h2>源码索引</h2><p>三张图固定同一提交并逐节点绑定源码，下方链接可直接查看官方仓库中的对应实现。</p><div class="table-wrap"><table><thead><tr><th>主题</th><th>文件与起始行</th><th>支撑内容</th></tr></thead><tbody><tr><td><a target="_blank" rel="noopener" href="https://github.com/grpc/grpc-go/blob/c9ab42cdb0a2b3e7b9d5510ebbc999638ee41eb7/examples/helloworld/helloworld/helloworld_grpc.pb.go#L42">Stub 与注册</a></td><td><code>examples/helloworld/helloworld/helloworld_grpc.pb.go:42</code></td><td>官方 Greeter 示例；与教学 GetUser 同形</td></tr><tr><td><a target="_blank" rel="noopener" href="https://github.com/grpc/grpc-go/blob/c9ab42cdb0a2b3e7b9d5510ebbc999638ee41eb7/call.go#L29">Invoke</a></td><td><code>call.go:29</code></td><td>Unary 拦截器 → 建流 → SendMsg → RecvMsg</td></tr><tr><td><a target="_blank" rel="noopener" href="https://github.com/grpc/grpc-go/blob/c9ab42cdb0a2b3e7b9d5510ebbc999638ee41eb7/stream.go#L602">调用和尝试</a></td><td><code>stream.go:602</code></td><td>picker 选连接；attempt 建底层流</td></tr><tr><td><a target="_blank" rel="noopener" href="https://github.com/grpc/grpc-go/blob/c9ab42cdb0a2b3e7b9d5510ebbc999638ee41eb7/internal/transport/http2_client.go#L1143">发送队列</a></td><td><code>internal/transport/http2_client.go:1143</code></td><td>writeQuota 与 controlBuf</td></tr><tr><td><a target="_blank" rel="noopener" href="https://github.com/grpc/grpc-go/blob/c9ab42cdb0a2b3e7b9d5510ebbc999638ee41eb7/internal/transport/controlbuf.go#L661">写协程</a></td><td><code>internal/transport/controlbuf.go:661</code></td><td>按流调度、窗口、拆帧与 flush</td></tr><tr><td><a target="_blank" rel="noopener" href="https://github.com/grpc/grpc-go/blob/c9ab42cdb0a2b3e7b9d5510ebbc999638ee41eb7/internal/transport/http2_client.go#L1726">客户端收帧</a></td><td><code>internal/transport/http2_client.go:1726</code></td><td>reader 按帧类型分发</td></tr><tr><td><a target="_blank" rel="noopener" href="https://github.com/grpc/grpc-go/blob/c9ab42cdb0a2b3e7b9d5510ebbc999638ee41eb7/internal/transport/transport.go#L96">接收缓冲</a></td><td><code>internal/transport/transport.go:96</code></td><td>Go chan + backlog；字节块与终止事件</td></tr><tr><td><a target="_blank" rel="noopener" href="https://github.com/grpc/grpc-go/blob/c9ab42cdb0a2b3e7b9d5510ebbc999638ee41eb7/rpc_util.go#L783">消息解析</a></td><td><code>rpc_util.go:783</code></td><td>5 字节头、N 字节正文及后续 Unmarshal</td></tr><tr><td><a target="_blank" rel="noopener" href="https://github.com/grpc/grpc-go/blob/c9ab42cdb0a2b3e7b9d5510ebbc999638ee41eb7/internal/transport/http2_server.go#L377">服务端建流</a></td><td><code>internal/transport/http2_server.go:377</code></td><td>HEADERS 创建流与上下文</td></tr><tr><td><a target="_blank" rel="noopener" href="https://github.com/grpc/grpc-go/blob/c9ab42cdb0a2b3e7b9d5510ebbc999638ee41eb7/server.go#L1089">服务端调度</a></td><td><code>server.go:1089</code></td><td>默认 go handleStream；worker 可选</td></tr><tr><td><a target="_blank" rel="noopener" href="https://github.com/grpc/grpc-go/blob/c9ab42cdb0a2b3e7b9d5510ebbc999638ee41eb7/server.go#L789">注册与方法表</a></td><td><code>server.go:789</code></td><td>注册时包装 Unary；路由依据服务与方法</td></tr><tr><td><a target="_blank" rel="noopener" href="https://github.com/grpc/grpc-go/blob/c9ab42cdb0a2b3e7b9d5510ebbc999638ee41eb7/server.go#L1281">业务包装</a></td><td><code>server.go:1281</code></td><td>wrapUnaryHandler 与统一 processRPC</td></tr><tr><td><a target="_blank" rel="noopener" href="https://github.com/grpc/grpc-go/blob/c9ab42cdb0a2b3e7b9d5510ebbc999638ee41eb7/stream.go#L1932">请求结束确认</a></td><td><code>stream.go:1932</code></td><td>Unary 还须确认请求方向 EOF</td></tr><tr><td><a target="_blank" rel="noopener" href="https://github.com/grpc/grpc-go/blob/c9ab42cdb0a2b3e7b9d5510ebbc999638ee41eb7/server.go#L1494">响应最终状态</a></td><td><code>server.go:1494</code></td><td>WriteStatus(错误或 OK)</td></tr><tr><td><a target="_blank" rel="noopener" href="https://github.com/grpc/grpc-go/blob/c9ab42cdb0a2b3e7b9d5510ebbc999638ee41eb7/internal/transport/http2_client.go#L981">客户端状态落地</a></td><td><code>internal/transport/http2_client.go:981</code></td><td>先存 status/trailer，再入队 EOF</td></tr><tr><td><a target="_blank" rel="noopener" href="https://github.com/grpc/grpc-go/blob/c9ab42cdb0a2b3e7b9d5510ebbc999638ee41eb7/stream.go#L207">客户端最终确认</a></td><td><code>stream.go:207</code></td><td>包装层二次读取，确认消息数及状态</td></tr><tr><td><a target="_blank" rel="noopener" href="https://github.com/grpc/grpc-go/blob/c9ab42cdb0a2b3e7b9d5510ebbc999638ee41eb7/internal/transport/http2_server.go#L1372">服务端取消</a></td><td><code>internal/transport/http2_server.go:1372</code></td><td>取消 context，不强杀业务协程</td></tr></tbody></table></div><p class="small">三张图已通过结构、源码引用与浏览器自动检查；源码静态核验不等于真实服务运行验证。</p></section>
+<footer>完整讨论已整理为 <a href="gRPC学习总结.md">gRPC 学习总结（Markdown）</a>，与本页及三张架构图保存在同一目录。</footer>
+</main><script>
+// 仅切换本地 Archify 文档，不加载外部脚本。
+const buttons = [...document.querySelectorAll('[data-src]')];
+for (const button of buttons) button.addEventListener('click', () => {
+  for (const item of buttons) item.setAttribute('aria-selected', String(item === button));
+  const name = button.dataset.src;
+  document.getElementById('diagram').src = name;
+  document.getElementById('open-diagram').href = name;
+  document.getElementById('diagram').style.height = name.includes('sequence') ? '1420px' : name.includes('runtime') ? '1130px' : '980px';
+});
+</script></body></html>
