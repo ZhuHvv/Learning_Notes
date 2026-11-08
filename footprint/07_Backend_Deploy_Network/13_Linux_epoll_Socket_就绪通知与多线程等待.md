@@ -2,6 +2,8 @@
 
 > 来源：整理自共享对话《介绍 IO 多路复用》及后续关于 epoll 实例的讨论。本文保留概念修正、内核对象关系、通知链、CPU 调度、多线程例子和实例选型，合并重复解释。Linux 内核结构会随版本调整，字段和伪代码只用于说明主线，不应视为稳定 ABI。
 
+> 基础前置：[IO 模型与多路复用：select、poll、epoll](14_IO模型与多路复用：select、poll、epoll.md)。同步/异步、阻塞/非阻塞、角色分工、三种机制的多轮监听与 LT/ET 语义统一在该文复习，本文侧重 epoll 内核对象和多线程模型。
+
 ## 1. 总体性概念
 
 epoll 是 Linux 的 **readiness（就绪）通知机制**，不是一个在后台轮询 Socket 的线程，也不是异步 IO 请求的完成队列。
@@ -130,7 +132,7 @@ sk->sk_data_ready(sk);
 | Socket receive queue | skb / 接收数据 | 保存应用还没读取的数据 |
 | Socket wait queue | `wait_queue_entry` 等等待项 | 记录谁关心 Socket 状态变化 |
 | epoll interest list | `epitem` 注册项，Linux 中以红黑树管理 | 记录该实例长期关注哪些对象和事件 |
-| epoll ready list | 已就绪的 `epitem` | 供该实例上的 `epoll_wait()` 获取事件 |
+| epoll ready list | 待复核就绪状态的 `epitem` | 供该实例上的 `epoll_wait()` 检查并交付实际就绪事件 |
 
 此外，epoll 实例本身还有等待队列，用于保存阻塞在这个实例上的 `epoll_wait()` 调用者。
 
@@ -189,7 +191,7 @@ Socket 状态变化并唤醒等待队列时，`ep_poll_callback()` 可以沿这�
 
 ### 2.7 interest list 为什么使用红黑树
 
-epoll 要管理大量长期注册项，`EPOLL_CTL_ADD`、`MOD`、`DEL` 都需要高效查找、插入和删除。Linux 使用红黑树实现有界的 `O(log N)` 操作。
+epoll 要管理大量长期注册项，`EPOLL_CTL_ADD`、`MOD`、`DEL` 都需要高效查找、插入和删除。Linux 使用红黑树，使注册集合中的查找、插入和删除具有 `O(log N)` 的树操作复杂度；这不代表整个系统调用只有树操作成本。
 
 注册身份不是单独的 fd 数字，而是 fd number 与 open file description 的组合。原因包括：
 
@@ -205,7 +207,7 @@ fd8 ─┘
 
 内核实现中可用类似 `(file *, fd)` 的键建立稳定顺序；`file *` 的地址大小只用于树的排序，没有业务含义。
 
-哈希表也可以被设计成注册集合，因此红黑树不是 epoll 理论上的必然要求。Linux 选择红黑树，是因为它具有稳定的最坏情况复杂度，不依赖哈希冲突质量，也不需要哈希表扩容。
+哈希表也可以被设计成注册集合，因此红黑树不是 epoll 理论上的必然要求。红黑树具有有界的最坏情况复杂度，不需要哈希表式扩容；这些是数据结构性质，不能仅凭当前实现断言当初选型的全部原因。
 
 ready 集合的主要需求则是“就绪时放入，等待者顺序取得”，不以随机查找为主，因此使用链表更合适。红黑树负责长期注册管理，等待队列、回调和 ready list 负责实时事件通知。
 
@@ -300,6 +302,8 @@ epoll_wait() 返回事件数量
 `wake_up()` 不等于线程立即运行，只是让它重新具备被调度的资格。
 
 ### 3.4 `epoll_wait()` 与 `recv()` 返回不同结果
+
+下面仅示意就绪事件与读取结果的差异。假设注册时设置了 `event.data.fd = fd`；`data` 是应用提供、内核回传的关联信息，不是内核自动推导的 fd。循环必须在 `epoll_wait()` 成功返回后处理 `[0, n)`，并在实际代码中分别处理读取失败、EOF 和重试。
 
 ```c
 struct epoll_event events[128];
